@@ -90,6 +90,7 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
 .overlay[hidden] { display: none; }
 .sheet { max-height: calc(100vh - 32px); overflow-y: auto; background: var(--bg); color: var(--ink); border: 1px solid var(--ink); max-width: 380px; width: 100%; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
 .sheet h2 { font-family: var(--display); font-weight: var(--title-weight); font-size: 20px; margin: 0; }
+.sheet .howlist { margin: 0; padding-left: 20px; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; gap: 6px; }
 .sheet p { margin: 0; font-size: 15px; line-height: 1.5; }
 .sheet button { align-self: flex-end; height: 40px; padding: 0 20px; border-radius: var(--r-btn); border: 1.5px solid var(--ink); background: var(--ink); color: var(--bg); font: 600 14px var(--body); cursor: pointer; }
 .sheethead { display: flex; align-items: center; justify-content: space-between; }
@@ -201,17 +202,18 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
 <div class="overlay" id="help" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="helptitle">
     <div class="sheethead"><h2 id="helptitle">How to play</h2><button class="xbtn" id="helpx" aria-label="Close">&times;</button></div>
-    <p>Climb the chain. The <b>bottom</b> word is where you start and the <b>top</b> word is where you end up. Both are given. Fill in every word between them.</p>
-    <p>The path winds up toward the end, and its arrows always point up. Each arrow reads from the lower word to the upper one, and the label tells you how they relate: SPARK <b>causes</b> FIRE.</p>
+    <p>Fill in the hidden words to climb from the <b>bottom</b> word to the <b>top</b> word.</p>
+    <p>Each label tells you how the lower word relates to the one above it: SPARK <b>causes</b> FIRE.</p>
     <div class="ex2" role="img" aria-label="Example: SPARK causes FIRE">
       <div class="exw"><span class="cell" style="background:#fff;color:#121212"></span><span class="cell" style="background:#fff;color:#121212"></span><span class="cell" style="background:#fff;color:#121212"></span><span class="cell" style="background:#fff;color:#121212"></span></div>
       <div class="exconn"><svg width="60" height="58" aria-hidden="true"><path d="M44,57 L44,50 C44,34 16,34 16,22 L16,10" fill="none" class="edge-line full"/><polygon points="11,11 21,11 16,2" class="arrow full"/></svg><span class="pill">causes</span></div>
       <div class="exw"><span class="cell" style="background:#121212;color:#fff">S</span><span class="cell" style="background:#121212;color:#fff">P</span><span class="cell" style="background:#121212;color:#fff">A</span><span class="cell" style="background:#121212;color:#fff">R</span><span class="cell" style="background:#121212;color:#fff">K</span></div>
     </div>
-    <p>Here you know SPARK and need the word above it that a spark <b>causes</b>. The link type changes from step to step, so the label also tells you which meaning of the word below to use. A label turns black once both its words are solved.</p>
-    <p>Link types: <b>causes</b>, <b>needs</b>, <b>found in</b>, <b>part of</b>, <b>kind of</b>, and more. Many links are verbs, like <b>opens</b>, <b>worn by</b> or <b>sits on</b>.</p>
-    <p>Solve the words in any order. Solved words are hints for their neighbors, and you can work down from the top word too. A wrong word shakes. Tap a word to select it. Stuck? Tap <b>Reveal letter</b> in the clue box. It counts as a hint.</p>
-    <p>Monday is the easiest. Puzzles get harder through the week. From Thursday on, a clue may show only its tricky meaning; tap <b>Second clue</b> for an easier one. It counts as a hint.</p>
+    <ul class="howlist">
+      <li>Solve the words in any order. Solved words help their neighbors.</li>
+      <li>Stuck? Tap <b>Second clue</b> or <b>Reveal letter</b>. Each counts as a hint.</li>
+      <li>Puzzles get harder through the week.</li>
+    </ul>
     <button id="helpclose">Got it</button>
   </div>
 </div>
@@ -950,7 +952,7 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
       edges: [['SYMBIOSIS','LICHEN','exemplifiedby'],['LICHEN','ROCK','growson'],['ROCK','MUSIC','kindof'],['MUSIC','NOTE','has'],['NOTE','DOLLAR','worth']] }
   ];
   var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  function dayName(i) { return i >= 77 ? 'Hard \u00b7 ' + (i - 76) : 'Week ' + (Math.floor(i / 7) + 1) + ' \u00b7 ' + DAYS[i % 7]; }
+  function dayName(i) { var d = new Date(LAUNCH.getFullYear(), LAUNCH.getMonth(), LAUNCH.getDate() + i); return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + (i >= 77 ? ' \u00b7 Hard' : ''); }
   // Daily puzzle: puzzle #1 (index 0) appears on LAUNCH (a Monday), then one per day in the player's local time.
   var LAUNCH = new Date(2026, 10, 30);
   function todayIndex() { var n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate()), d = Math.round((t - LAUNCH) / 86400000); return Math.max(0, Math.min(d, PUZZLES.length - 1)); }
