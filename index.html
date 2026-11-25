@@ -1079,10 +1079,10 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
       rows[r].sort(function (a, b) { return a.col - b.col; }).forEach(function (n) { var w = document.createElement('div'); w.className = 'miniw'; n.ans.split('').forEach(function (c, i) { var q = document.createElement('i'); if (S.hinted[n.id][i]) q.className = 'h'; w.appendChild(q); }); row.appendChild(w); });
       g.appendChild(row);
     });
-    var nxt = nextPuzzle(), nb = document.getElementById('resnext'); nb.textContent = nxt < 0 ? 'Done' : dayName(nxt) + ' \u2192';
+    var nxt = nextPuzzle(), nb = document.getElementById('resnext'); nb.textContent = nxt < 0 ? 'Done' : nxt < ALL.p ? '\u2190 ' + dayName(nxt) : dayName(nxt) + ' \u2192';
     resEl.hidden = false; nb.focus();
   }
-  function nextPuzzle() { for (var k = 1; k < PUZZLES.length; k++) { var j = (ALL.p + k) % PUZZLES.length; if (unlocked(j) && !(ALL.s[j] && ALL.s[j].won)) return j; } return -1; }
+  function nextPuzzle() { var j; for (j = ALL.p - 1; j >= 0; j--) if (unlocked(j) && !(ALL.s[j] && ALL.s[j].won)) return j; for (j = ALL.p + 1; j < PUZZLES.length; j++) if (unlocked(j) && !(ALL.s[j] && ALL.s[j].won)) return j; return -1; }
   function hideResults() { resEl.hidden = true; }
   document.getElementById('resclose').addEventListener('click', hideResults);
   resEl.addEventListener('click', function (ev) { if (ev.target === resEl) hideResults(); });
