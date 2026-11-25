@@ -47,7 +47,6 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
 
 .boardwrap { margin: 0 auto; position: relative; }
 .board { position: relative; height: 394px; transform-origin: top left; }
-.base { position: absolute; left: 0; right: 0; top: 35px; height: 4px; border-radius: 2px; background: var(--cur-line, #2b6cb0); }
 .flag svg { transform: scale(.58); transform-origin: 23% 100%; transition: transform .7s cubic-bezier(.34,1.56,.64,1); }
 .board.won .flag { color: #F4A300; }
 .board.won .flag svg { transform: scale(1); }
@@ -1144,7 +1143,6 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
     NODES.forEach(function (n) {
       var el = document.createElement('div');
       el.className = 'node'; if (!n.clue && n.row === 0) { var fl = document.createElement('div'); fl.className = 'flag'; fl.innerHTML = '<svg width="38" height="38" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 21V2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 3h13l-4 4.5L18 12H5z" fill="currentColor"/></svg>'; el.appendChild(fl); } el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; el.style.width = n.w + 'px';
-      if (!n.clue && n.row !== 0) { var bs = document.createElement('div'); bs.className = 'base'; el.appendChild(bs); }
       var cells = document.createElement('div'); cells.className = 'cells';
       cellEls[n.id] = [];
       for (var i = 0; i < n.ans.length; i++) {
