@@ -953,7 +953,9 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
   function dayName(i) { return i >= 77 ? 'Hard \u00b7 ' + (i - 76) : 'Week ' + (Math.floor(i / 7) + 1) + ' \u00b7 ' + DAYS[i % 7]; }
   // Daily puzzle: puzzle #1 (index 0) appears on LAUNCH (a Monday), then one per day in the player's local time.
   var LAUNCH = new Date(2026, 10, 30);
-  function todayIndex() { var n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate()), d = Math.round((t - LAUNCH) / 86400000); return Math.max(0, Math.min(d, 76)); }
+  function todayIndex() { var n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate()), d = Math.round((t - LAUNCH) / 86400000); return Math.max(0, Math.min(d, PUZZLES.length - 1)); }
+  var PREVIEW = /[?&]preview/.test(location.search);
+  function unlocked(i) { return PREVIEW || i <= todayIndex(); }
   var NODES = [], EDGES = [], byId = {};
   var CELL = 32, GAP = 0, BW = 352, BH = 394, ROWGAP = 70, STRETCH = 0, MAXROW = 5;
 
@@ -1071,7 +1073,7 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
     var nxt = nextPuzzle(), nb = document.getElementById('resnext'); nb.textContent = nxt < 0 ? 'Done' : dayName(nxt) + ' \u2192';
     resEl.hidden = false; nb.focus();
   }
-  function nextPuzzle() { for (var k = 1; k < PUZZLES.length; k++) { var j = (ALL.p + k) % PUZZLES.length; if (!(ALL.s[j] && ALL.s[j].won)) return j; } return -1; }
+  function nextPuzzle() { for (var k = 1; k < PUZZLES.length; k++) { var j = (ALL.p + k) % PUZZLES.length; if (unlocked(j) && !(ALL.s[j] && ALL.s[j].won)) return j; } return -1; }
   function hideResults() { resEl.hidden = true; }
   document.getElementById('resclose').addEventListener('click', hideResults);
   resEl.addEventListener('click', function (ev) { if (ev.target === resEl) hideResults(); });
@@ -1295,7 +1297,7 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
   menuBtn.addEventListener('click', function (ev) { ev.stopPropagation(); setMenu(menuEl.hidden); });
   document.addEventListener('click', function () { setMenu(false); });
     document.getElementById('reset').addEventListener('click', function () { setMenu(false); S = ALL.s[ALL.p] = fresh(); render(); });
-  (function () { var box = document.getElementById('pzlist'); PUZZLES.forEach(function (P, i) { var b = document.createElement('button'); b.setAttribute('role', 'menuitem'); b.className = 'pz'; b.setAttribute('data-pz', i); b.textContent = dayName(i) + (i === todayIndex() ? ' \u00b7 Today' : ''); b.addEventListener('click', function () { setMenu(false); loadPuzzle(i); }); box.appendChild(b); }); })();
+  (function () { var box = document.getElementById('pzlist'); PUZZLES.forEach(function (P, i) { var b = document.createElement('button'); b.setAttribute('role', 'menuitem'); b.className = 'pz'; b.setAttribute('data-pz', i); b.textContent = dayName(i) + (i === todayIndex() ? ' \u00b7 Today' : ''); if (!unlocked(i)) { b.textContent = dayName(i) + ' \u00b7 Locked'; b.disabled = true; b.style.opacity = '.4'; b.style.cursor = 'default'; } b.addEventListener('click', function () { if (!unlocked(i)) return; setMenu(false); loadPuzzle(i); }); box.appendChild(b); }); })();
   window.addEventListener('resize', function () { if (calcBW() !== BW) { buildBoard(); render(); } fit(); });
   window.addEventListener('load', fit);
 
