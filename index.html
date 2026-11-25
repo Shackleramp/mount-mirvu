@@ -126,8 +126,9 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
 .menu button#hint { border-top: 1px solid var(--rule); }
 .menu button:hover { background: var(--sel-bg); }
 .menu button.pz.done::after { content: " \2713"; }
-.menu button#results, .menu button#snd { border-top: 1px solid var(--rule); }
 .menu button[hidden] { display: none; }
+.menu .menulabel { border-top: 1px solid var(--rule); padding: 14px 18px 6px; font: 600 12px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #6b6b6b); }
+.menu #pzlist { display: block; }
 @keyframes hop { 0% { transform: translateY(0); } 35% { transform: translateY(-9px) scale(1.08); } 70% { transform: translateY(1px); } 100% { transform: translateY(0); } }
 .board.celebrate .cell { animation: hop 0.55s cubic-bezier(.3,.7,.4,1) both; animation-delay: var(--d, 0ms); }
 @keyframes pillpop { 0% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.35); } 100% { transform: translate(-50%, -50%) scale(1); } }
@@ -172,10 +173,11 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
     <div class="menuwrap">
       <button class="menubtn" id="menubtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu" aria-label="Menu">&#8943;</button>
       <div class="menu" id="menu" role="menu" hidden>
-        <span id="pzlist"></span>
         <button role="menuitem" id="results" hidden>Show results</button>
         <button role="menuitem" id="snd">Sound: on</button>
         <button role="menuitem" id="reset">Start over</button>
+        <div class="menulabel">Archive</div>
+        <span id="pzlist"></span>
       </div>
     </div>
     </div>
