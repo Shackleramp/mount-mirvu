@@ -154,12 +154,6 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
 @media (prefers-reduced-motion: reduce) { .cell.wrong, .cell.shake, .result { animation: none; } .board.celebrate .cell, .board.celebrate .pill { animation: none; } .confetti { display: none; } }
 @media (max-height: 760px) { .page { padding-top: 8px; gap: 8px; } header { padding-bottom: 6px; } h1 { font-size: 26px; } .cluebar { min-height: 64px; } }
 @media (max-height: 700px) { .key { height: 34px; } .keys { gap: 4px; padding: 6px 0 8px; } .navbtn { width: 34px; height: 34px; font-size: 22px; } .revealbtn { height: 34px; } .navrow { padding-bottom: 0; } }
-@media (orientation: landscape) and (min-width: 900px) {
-  .page { max-width: 1040px; display: grid; grid-template-columns: 1fr 400px; column-gap: 32px; grid-template-rows: auto auto 1fr; align-content: start; }
-  header, .rulechip { grid-column: 1 / -1; }
-  .boardwrap { grid-column: 1; grid-row: 3; justify-self: center; }
-  .keys { grid-column: 2; grid-row: 3; position: static; margin-top: 0; align-self: start; box-shadow: none; }
-}
 </style>
 </head>
 <body>
@@ -1171,9 +1165,8 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
   }
 
   function fit() {
-    var WIDE = window.matchMedia('(orientation: landscape) and (min-width: 900px)').matches, cw = document.documentElement.clientWidth;
-    var w = Math.min(1, (WIDE ? Math.min(cw, 1040) - 24 - 432 : cw - 24) / BW), wrap = document.getElementById('wrap');
-    var keysH = WIDE ? 0 : document.getElementById('keys').offsetHeight, availH = window.innerHeight - wrap.offsetTop - keysH - 28;
+    var w = Math.min(1, (document.documentElement.clientWidth - 24) / BW), wrap = document.getElementById('wrap');
+    var keysH = document.getElementById('keys').offsetHeight, availH = window.innerHeight - wrap.offsetTop - keysH - 28;
     if (availH > 0) {
       var base = MAXROW >= 7 ? 60 : MAXROW === 6 ? 66 : 72, want = (availH / w - 26 - CELL - 14) / MAXROW, tgt = want > base ? Math.min(190, Math.floor(want)) : 0;
       if (Math.abs(tgt - STRETCH) > 1) { STRETCH = tgt; buildBoard(); render(); }
@@ -1228,7 +1221,7 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
   var lastSel = null;
   function ensureVisible() {
     var el = nodeEls[S.sel]; if (!el) return;
-    var r = el.getBoundingClientRect(), top = 8, bot = window.matchMedia('(orientation: landscape) and (min-width: 900px)').matches ? window.innerHeight : document.getElementById('keys').getBoundingClientRect().top - 8;
+    var r = el.getBoundingClientRect(), top = 8, bot = document.getElementById('keys').getBoundingClientRect().top - 8;
     if (r.top < top) window.scrollBy(0, r.top - top); else if (r.bottom > bot) window.scrollBy(0, r.bottom - bot);
   }
   function render() {
