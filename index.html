@@ -28,7 +28,9 @@
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); -webkit-text-size-adjust: 100%; }
 .page { max-width: 420px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; padding: 20px 12px 0; display: flex; flex-direction: column; gap: 16px; }
-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+header { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-bottom: 12px; }
+header::after { content: ''; position: absolute; bottom: 0; left: 50%; width: 100vw; margin-left: -50vw; border-bottom: 1px solid var(--rule); }
+body { overflow-x: hidden; }
 h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: var(--title-size); letter-spacing: var(--title-track); line-height: 1; margin: 0; }
 
 .cluebar { display: flex; align-items: center; gap: 8px; background: var(--bar-bg); border: 1.5px solid var(--bar-line); border-radius: var(--r-ui); padding: 8px 10px; min-height: 72px; box-sizing: border-box; }
