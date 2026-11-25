@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en" data-skin="newsprint">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mount Mirvu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Libre+Franklin:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one column. Skins only swap tokens, so every skin has the same structure and spacing. */
+:root, :root[data-skin="newsprint"] {
+  --bg: #ffffff; --ink: #121212; --muted: #5f5f5f; --rule: #121212; --focus: #121212;
+  --cell: 32px; --gap: 0px; --cell-bg: #ffffff; --cell-line: #121212; --cell-ink: #121212;
+  --sel-bg: #a7d8ff; --sel-line: #121212; --cur-bg: #ffda00; --cur-line: #121212;
+  --solved-bg: #121212; --solved-ink: #ffffff; --solved-line: #121212;
+  --edge: #a3a3a3; --edge-full: #121212; --pill-bg: #121212; --pill-ink: #ffffff; --pill-line: #121212;
+  --bar-bg: #dcefff; --bar-line: transparent; --key-bg: #e4e4e4; --key-ink: #121212; --key-line: transparent;
+  --bad: #c8102e;
+  --r-cell: 0px; --r-ui: 0px; --r-key: 4px; --r-btn: 99px; --r-pill: 99px;
+  --display: "Libre Baskerville", Georgia, "Times New Roman", serif;
+  --title-weight: 700; --title-size: 32px; --title-track: -0.01em;
+  --letters: "Libre Franklin", "Helvetica Neue", Arial, sans-serif; --letters-weight: 600; --letter-size: 18px;
+  --body: "Libre Franklin", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); -webkit-text-size-adjust: 100%; }
+.page { max-width: 420px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; padding: 20px 12px 0; display: flex; flex-direction: column; gap: 16px; }
+header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: var(--title-size); letter-spacing: var(--title-track); line-height: 1; margin: 0; }
+
+.cluebar { display: flex; align-items: center; gap: 8px; background: var(--bar-bg); border: 1.5px solid var(--bar-line); border-radius: var(--r-ui); padding: 8px 10px; min-height: 72px; box-sizing: border-box; }
+.cluebar .txt { flex: 1; font-size: 16px; line-height: 1.3; font-weight: 500; }
+.cluebar .txt { display: flex; align-items: center; gap: 8px; }
+.cluebar .txt > span { flex: 1; }
+.cluebtns { flex: none; display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+.cluebtns .morebtn { min-width: 98px; white-space: nowrap; padding: 3px 10px; }
+.morebtn { flex: none; font: inherit; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: var(--r-btn); border: 1.5px solid var(--cell-line); background: #fff; color: var(--cell-ink); cursor: pointer; }
+.cluebar .txt small { display: block; font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+.nav { width: 38px; height: 38px; border-radius: var(--r-btn); border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font-size: 18px; cursor: pointer; }
+.nav:focus-visible, .key:focus-visible, .menubtn:focus-visible, .menu button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.boardwrap { margin: 0 auto; position: relative; }
+.board { position: relative; height: 394px; transform-origin: top left; }
+.base { position: absolute; left: 0; right: 0; top: 35px; height: 4px; border-radius: 2px; background: var(--cur-line, #2b6cb0); }
+.flag { position: absolute; left: 50%; top: -24px; margin-left: -5px; color: var(--cur-line, #2b6cb0); line-height: 0; }
+.node[data-tag]::before { content: attr(data-tag); position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); font: 700 10px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.board svg { position: absolute; inset: 0; pointer-events: none; }
+.edge-line { stroke: var(--edge); stroke-width: 1.5; stroke-dasharray: 4 4; fill: none; }
+.edge-line.full { stroke: var(--edge-full); stroke-dasharray: none; stroke-width: 2.5; }
+.arrow { fill: var(--edge); }
+.arrow.full { fill: var(--edge-full); }
+.pill { position: absolute; transform: translate(-50%, -50%); font-size: 13px; font-weight: 600; line-height: 1.15; padding: 2px 8px; border-radius: var(--r-pill); background: var(--pill-bg); color: var(--pill-ink); border: 1.5px solid var(--pill-line); white-space: nowrap; letter-spacing: 0.02em; }
+.rulechip { display: none !important; margin: 10px 0 0; font-size: 12px; letter-spacing: 0.04em; color: var(--ink); }
+.rulechip b { font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-right: 6px; }
+.rulechip span { opacity: 0.7; }
+.pill.ghost { background: #ffffff; color: #8a8a8a; border-color: #c8c8c8; }
+.pill.alt { background: #ffffff; color: var(--pill-line); }
+.pill:empty { display: none; }
+
+.node { position: absolute; cursor: pointer; }
+.cells { display: flex; gap: var(--gap); }
+.cell { width: var(--cell); height: var(--cell); display: grid; place-items: center; font-family: var(--letters); font-weight: var(--letters-weight); font-size: var(--letter-size); color: var(--cell-ink); border: 1px solid var(--cell-line); background: var(--cell-bg); border-radius: var(--r-cell); text-transform: uppercase; }
+:root[data-skin="newsprint"] .cell + .cell { border-left: 0; }
+:root[data-skin="newsprint"] .cell:first-child { border-radius: 0; }
+.node.sel .cell { background: var(--sel-bg); border-color: var(--sel-line); }
+.node.sel .cell.cur { background: var(--cur-bg); border-color: var(--cur-line); }
+.node.solved .cell { background: var(--solved-bg); color: var(--solved-ink); border-color: var(--solved-line); }
+.cell.hint { text-decoration: underline; text-underline-offset: 3px; }
+.cell.shake { animation: shake 0.3s 2; }
+.cell.wrong { border-color: var(--bad); color: var(--bad); animation: shake 0.35s; }
+@keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+.keys { display: flex; flex-direction: column; gap: 6px; margin-top: auto; position: sticky; bottom: 0; z-index: 6; background: var(--bg); padding: 8px 0 12px; box-shadow: 0 -1px 0 var(--rule); }
+.row { display: flex; gap: 5px; justify-content: center; }
+.key { flex: 1 1 0; max-width: 38px; height: 40px; border-radius: var(--r-key); border: 1px solid var(--key-line); background: var(--key-bg); color: var(--key-ink); font: 600 16px var(--body); cursor: pointer; touch-action: manipulation; }
+.navrow { display: flex; justify-content: space-between; padding: 0 2px 4px; }
+.navbtn { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font: 400 24px/1 var(--body); padding: 0 0 3px; cursor: pointer; touch-action: manipulation; }
+.navbtn:active { background: var(--sel-bg); }
+.revealbtn { align-self: center; height: 40px; padding: 0 18px; border-radius: var(--r-btn); border: 1.5px solid var(--ink); background: #fff; color: var(--ink); font: 600 14px var(--body); cursor: pointer; touch-action: manipulation; }
+.revealbtn:active { background: var(--sel-bg); }
+.key.wide { max-width: 64px; flex-grow: 1.6; display: flex; align-items: center; justify-content: center; font-size: 26px; line-height: 1; padding: 0 0 3px; }
+.key:active { filter: brightness(0.9); }
+
+
+.hbtns { display: flex; gap: 8px; align-items: center; }
+.overlay { position: fixed; inset: 0; background: rgba(18, 18, 18, 0.5); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+.overlay[hidden] { display: none; }
+.sheet { max-height: calc(100vh - 32px); overflow-y: auto; background: var(--bg); color: var(--ink); border: 1px solid var(--ink); max-width: 380px; width: 100%; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.sheet h2 { font-family: var(--display); font-weight: var(--title-weight); font-size: 20px; margin: 0; }
+.sheet p { margin: 0; font-size: 15px; line-height: 1.5; }
+.sheet button { align-self: flex-end; height: 40px; padding: 0 20px; border-radius: var(--r-btn); border: 1.5px solid var(--ink); background: var(--ink); color: var(--bg); font: 600 14px var(--body); cursor: pointer; }
+.sheethead { display: flex; align-items: center; justify-content: space-between; }
+.sheet .xbtn { align-self: auto; width: 36px; height: 36px; padding: 0; margin-right: -8px; border: 0; background: transparent; color: var(--ink); font-size: 26px; line-height: 1; }
+.ex2 { display: flex; flex-direction: column; align-items: center; padding: 8px 0 4px; }
+.exw { display: flex; }
+.exw .cell { background: var(--solved-bg); color: var(--solved-ink); border-color: var(--solved-line); }
+.exconn { position: relative; height: 58px; width: 100%; display: flex; justify-content: center; }
+.exconn svg { display: block; }
+.exconn .pill { top: 50%; left: 50%; }
+.ex { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--bar-bg); }
+.exrow { display: flex; }
+.excell { width: var(--cell); height: var(--cell); display: grid; place-items: center; background: var(--solved-bg); color: var(--solved-ink); border: 1px solid var(--solved-line); font-family: var(--letters); font-weight: var(--letters-weight); font-size: var(--letter-size); }
+.excell + .excell { border-left: 0; }
+.exlink { display: flex; align-items: center; gap: 8px; padding-left: 8px; font-size: 14px; }
+.expill { font-size: 11px; font-weight: 600; padding: 2px 8px; background: var(--pill-bg); color: var(--pill-ink); letter-spacing: 0.02em; }
+.sheet button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.menuwrap { position: relative; }
+.menubtn { width: 38px; height: 38px; border: 1.5px solid var(--ink); border-radius: var(--r-btn); background: transparent; color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer; }
+.menu { max-height: 75vh; overflow-y: auto; position: absolute; right: 0; top: calc(100% + 6px); min-width: 180px; background: var(--bg); border: 1px solid var(--ink); z-index: 10; }
+.menu button { display: block; width: 100%; text-align: left; padding: 12px 14px; border: 0; background: transparent; color: var(--ink); font: 500 15px var(--body); cursor: pointer; }
+.menu button + button { border-top: 1px solid var(--rule); }
+.menu button.pz.on { font-weight: 700; }
+.menu button.pz + button.pz { border-top: 0; }
+#pzlist { display: block; }
+#pzlist button + button { border-top: 0; }
+.menu button#hint { border-top: 1px solid var(--rule); }
+.menu button:hover { background: var(--sel-bg); }
+.menu button.pz.done::after { content: " \2713"; }
+.menu button#results, .menu button#snd { border-top: 1px solid var(--rule); }
+.menu button[hidden] { display: none; }
+@keyframes hop { 0% { transform: translateY(0); } 35% { transform: translateY(-9px) scale(1.08); } 70% { transform: translateY(1px); } 100% { transform: translateY(0); } }
+.board.celebrate .cell { animation: hop 0.55s cubic-bezier(.3,.7,.4,1) both; animation-delay: var(--d, 0ms); }
+@keyframes pillpop { 0% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.35); } 100% { transform: translate(-50%, -50%) scale(1); } }
+.board.celebrate .pill { animation: pillpop 0.5s ease-out both; animation-delay: var(--d, 0ms); }
+.toast { position: fixed; top: 84px; left: 50%; transform: translateX(-50%); z-index: 40; background: var(--ink); color: var(--bg); font-family: var(--display); font-weight: 700; font-size: 17px; padding: 12px 20px; pointer-events: none; opacity: 0; transition: opacity .18s; white-space: nowrap; }
+.toast.show { opacity: 1; }
+.confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 30; }
+.confetti i { position: absolute; top: -14px; display: block; animation: fall linear forwards; }
+@keyframes fall { to { transform: translate3d(var(--dx), 108vh, 0) rotate(var(--rot)); } }
+.result { gap: 14px; text-align: center; animation: rise .35s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.result .kicker { font: 600 12px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.result h2 { font-size: 34px; line-height: 1.05; letter-spacing: var(--title-track); }
+.result .rule { height: 0; border-top: 1px solid var(--ink); }
+.stats { display: flex; justify-content: center; }
+.stat { flex: 1; padding: 2px 6px; }
+.stat + .stat { border-left: 1px solid var(--ink); }
+.stat b { display: block; font-family: var(--display); font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat span { font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; background: var(--bar-bg); padding: 12px; }
+.chips .expill { font-size: 12px; }
+.minigrid { display: flex; flex-direction: column; gap: 3px; align-items: center; }
+.minirow { display: flex; gap: 22px; }
+.miniw { display: flex; gap: 1px; }
+.miniw i { width: 10px; height: 10px; background: var(--ink); display: block; }
+.miniw i.h { background: var(--bg); border: 1.5px solid var(--ink); }
+.btnrow { display: flex; gap: 10px; }
+.sheet .btnrow button { flex: 1; align-self: stretch; }
+.sheet button.ghost { background: transparent; color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .cell.wrong, .cell.shake, .result { animation: none; } .board.celebrate .cell, .board.celebrate .pill { animation: none; } .confetti { display: none; } }
+@media (max-height: 760px) { .page { padding-top: 8px; gap: 8px; } header { padding-bottom: 6px; } h1 { font-size: 26px; } .cluebar { min-height: 64px; } }
+@media (max-height: 700px) { .key { height: 34px; } .keys { gap: 4px; padding: 6px 0 8px; } .navbtn { width: 34px; height: 34px; font-size: 22px; } .revealbtn { height: 34px; } .navrow { padding-bottom: 0; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <h1>Mount Mirvu</h1>
+    <div class="hbtns">
+    <button class="menubtn" id="helpbtn" aria-haspopup="dialog" aria-label="How to play">?</button>
+    <div class="menuwrap">
+      <button class="menubtn" id="menubtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu" aria-label="Menu">&#8943;</button>
+      <div class="menu" id="menu" role="menu" hidden>
+        <span id="pzlist"></span>
+        <button role="menuitem" id="results" hidden>Show results</button>
+        <button role="menuitem" id="snd">Sound: on</button>
+        <button role="menuitem" id="reset">Start over</button>
+      </div>
+    </div>
+    </div>
+  </header>
+  <p class="rulechip" id="rulechip"></p>
+
+  <section class="cluebar">
+    <div class="txt" id="clue" aria-live="polite"></div>
+    <div class="cluebtns" id="cluebtns"><button class="morebtn" id="revealbtn" type="button">Reveal letter</button></div>
+  </section>
+
+  <div class="boardwrap" id="wrap"><div class="board" id="board"></div></div>
+
+  <section class="keys" id="keys" aria-label="Keyboard"></section>
+
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+<div class="overlay" id="res" hidden>
+  <div class="sheet result" role="dialog" aria-modal="true" aria-labelledby="restitle">
+    <div class="kicker" id="reskick"></div>
+    <h2 id="restitle"></h2>
+    <div class="rule"></div>
+    <div class="stats" id="resstats"></div>
+    <div class="chips" id="reschips"></div>
+    <div class="minigrid" id="resgrid" aria-hidden="true"></div>
+    <div class="btnrow"><button class="ghost" id="resshare">Share</button><button id="resnext">Next puzzle</button></div>
+    <button class="ghost" id="resclose" style="align-self:center;border:0;height:32px;text-decoration:underline;padding:0">View board</button>
+  </div>
+</div>
+<div class="overlay" id="help" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="helptitle">
+    <div class="sheethead"><h2 id="helptitle">How to play</h2><button class="xbtn" id="helpx" aria-label="Close">&times;</button></div>
+    <p>Climb the chain. The <b>bottom</b> word is where you start and the <b>top</b> word is where you end up. Both are given. Fill in every word between them.</p>
+    <p>The path winds up toward the end, and its arrows always point up. Each arrow reads from the lower word to the upper one, and the label tells you how they relate: SPARK <b>causes</b> FIRE.</p>
+    <div class="ex2" role="img" aria-label="Example: SPARK causes FIRE">
+      <div class="exw"><span class="cell" style="background:#fff;color:#121212"></span><span class="cell" style="background:#fff;color:#121212"></span><span class="cell" style="background:#fff;color:#121212"></span><span class="cell" style="background:#fff;color:#121212"></span></div>
+      <div class="exconn"><svg width="60" height="58" aria-hidden="true"><path d="M44,57 L44,50 C44,34 16,34 16,22 L16,10" fill="none" class="edge-line full"/><polygon points="11,11 21,11 16,2" class="arrow full"/></svg><span class="pill">causes</span></div>
+      <div class="exw"><span class="cell" style="background:#121212;color:#fff">S</span><span class="cell" style="background:#121212;color:#fff">P</span><span class="cell" style="background:#121212;color:#fff">A</span><span class="cell" style="background:#121212;color:#fff">R</span><span class="cell" style="background:#121212;color:#fff">K</span></div>
+    </div>
+    <p>Here you know SPARK and need the word above it that a spark <b>causes</b>. The link type changes from step to step, so the label also tells you which meaning of the word below to use. A label turns black once both its words are solved.</p>
+    <p>Link types: <b>causes</b>, <b>needs</b>, <b>found in</b>, <b>part of</b>, <b>kind of</b>, and more. Many links are verbs, like <b>opens</b>, <b>worn by</b> or <b>sits on</b>.</p>
+    <p>Solve the words in any order. Solved words are hints for their neighbors, and you can work down from the top word too. A wrong word shakes. Tap a word to select it. Stuck? Tap <b>Reveal letter</b> in the clue box. It counts as a hint.</p>
+    <p>Monday is the easiest. Puzzles get harder through the week. From Thursday on, a clue may show only its tricky meaning; tap <b>Second clue</b> for an easier one. It counts as a hint.</p>
+    <button id="helpclose">Got it</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Each word: [answer, clue, column (0 left, 1 right, 2 full width), row (0-3)]. Edges: [from, to, link type].
+  var PUZZLES = [
+    { words: [
+        ['DENTIST', null, 2, 0],
+        ['DRILL', 'Tool that bores holes, or repeated practice', 2, 1],
+        ['SERGEANT', 'Noncommissioned officer, or one who barks orders at recruits', 2, 2],
+        ['STRIPES', 'Parallel bands of color, or rank marks on a sleeve', 2, 3],
+        ['ZEBRA', 'Black-and-white grazer, or last animal in an A-to-Z list', 2, 4],
+        ['SAVANNA', null, 2, 5]],
+      edges: [['DENTIST','DRILL','uses'],['DRILL','SERGEANT','ledby'],['SERGEANT','STRIPES','wears'],['STRIPES','ZEBRA','foundon'],['ZEBRA','SAVANNA','livesin']] },
+    { words: [
+        ['LIBRARY', null, 2, 0],
+        ['CARD', 'Greeting sent on holidays, or plastic wallet item', 2, 1],
+        ['POKER', 'Fireplace tool, or Texas Hold\'em, for one', 2, 2],
+        ['CHIP', 'Crunchy snack, or small piece broken off', 2, 3],
+        ['SALSA', 'Spicy dip of tomato and onion, or Cuban-born ballroom style', 2, 4],
+        ['DANCE', null, 2, 5]],
+      edges: [['LIBRARY','CARD','issues'],['CARD','POKER','usedin'],['POKER','CHIP','uses'],['CHIP','SALSA','dippedin'],['SALSA','DANCE','kindof']] },
+    { words: [
+        ['PIANIST', null, 2, 0],
+        ['SCALE', 'Do-re-mi sequence, or flaky covering on a trout', 2, 1],
+        ['SALMON', 'Pink fish that swims upstream, or coral-pink color', 2, 2],
+        ['BEAR', 'Big furry omnivore, or to endure', 2, 3],
+        ['BULL', 'Rodeo animal, or investor expecting prices to rise', 2, 4],
+        ['BROKER', null, 2, 5]],
+      edges: [['PIANIST','SCALE','practices'],['SCALE','SALMON','covers'],['SALMON','BEAR','eatenby'],['BEAR','BULL','oppositeof'],['BULL','BROKER','favoredby']] },
+    { words: [
+        ['GARDENER', null, 2, 0],
+        ['SPADE', 'Digging tool, or suit with a black leaf-shaped symbol', 2, 1],
+        ['ACE', 'Skilled pilot, or card that can be high or low', 2, 2],
+        ['SERVE', 'Provide a meal to, or start a point in tennis', 2, 3],
+        ['BUTLER', 'Head of a household staff who answers the door, or Jeeves, for one', 2, 4],
+        ['MANSION', null, 2, 5]],
+      edges: [['GARDENER','SPADE','uses'],['SPADE','ACE','includes'],['ACE','SERVE','kindof'],['SERVE','BUTLER','doneby'],['BUTLER','MANSION','staffs']] },
+    { words: [
+        ['TAILOR', null, 2, 0],
+        ['FABRIC', 'Material sold by the yard, or structure of a society', 2, 1],
+        ['SUIT', 'Matching jacket and trousers, or a case brought before a judge', 2, 2],
+        ['COURT', 'Rectangle for basketball or tennis, or sovereign\'s entourage', 2, 3],
+        ['KING', 'Monarch, or piece that must be protected in chess', 2, 4],
+        ['CHECKMATE', null, 2, 5]],
+      edges: [['TAILOR','FABRIC','cuts'],['FABRIC','SUIT','madeinto'],['SUIT','COURT','filedin'],['COURT','KING','ruledby'],['KING','CHECKMATE','faces']] },
+    { words: [
+        ['ORIGAMI', null, 2, 0],
+        ['PAPER', 'Sheets for printing, or daily news publication', 2, 1],
+        ['CRANE', 'Long-legged wading bird, or machine on a construction site', 2, 2],
+        ['MARSH', 'Where cattails grow, or boggy ground', 2, 3],
+        ['ALLIGATOR', 'Reptile with a broad snout, or large Everglades lurker', 2, 4],
+        ['HANDBAG', null, 2, 5]],
+      edges: [['ORIGAMI','PAPER','madefrom'],['PAPER','CRANE','foldedinto'],['CRANE','MARSH','wadesin'],['MARSH','ALLIGATOR','hosts'],['ALLIGATOR','HANDBAG','madeinto']] },
+    { words: [
+        ['LIGHTHOUSE', null, 2, 0],
+        ['BEAM', 'Narrow ray of brightness, or squared timber across a building\'s frame', 2, 1],
+        ['CEILING', 'Upper surface of a room, or limit on prices', 2, 2],
+        ['FAN', 'Whirring cooler with blades, or devoted follower of a team', 2, 3],
+        ['AUTOGRAPH', 'Signature collected on a baseball, or John Hancock, for one', 2, 4],
+        ['CELEBRITY', null, 2, 5]],
+      edges: [['LIGHTHOUSE','BEAM','casts'],['BEAM','CEILING','holdsup'],['CEILING','FAN','has'],['FAN','AUTOGRAPH','seeks'],['AUTOGRAPH','CELEBRITY','signedby']] },
+    { words: [
+        ['ELEVATOR', null, 2, 0],
+        ['BUTTON', 'Round fastener on a coat, or small control you press', 2, 1],
+        ['MUSHROOM', 'Fungus with a cap and stem, or to grow rapidly', 2, 2],
+        ['FOREST', 'Dense woodland, or setting for Little Red Riding Hood', 2, 3],
+        ['RANGER', 'Park guardian, or lawman on horseback in old westerns', 2, 4],
+        ['TEXAS', null, 2, 5]],
+      edges: [['ELEVATOR','BUTTON','has'],['BUTTON','MUSHROOM','kindof'],['MUSHROOM','FOREST','foundin'],['FOREST','RANGER','patrolledby'],['RANGER','TEXAS','symbolof']] },
+    { words: [
+        ['CANDLE', null, 2, 0],
+        ['WAX', 'Substance from bees or paraffin, or to buff a car to a shine', 2, 1],
+        ['MUSEUM', 'Place with exhibits behind glass, or building like the Louvre', 2, 2],
+        ['FOSSIL', 'Imprint of ancient life in stone, or someone hopelessly out of date', 2, 3],
+        ['DINOSAUR', 'Jurassic giant, or Tyrannosaurus rex, for one', 2, 4],
+        ['ASTEROID', null, 2, 5]],
+      edges: [['CANDLE','WAX','madefrom'],['WAX','MUSEUM','displayedin'],['MUSEUM','FOSSIL','displays'],['FOSSIL','DINOSAUR','remainsof'],['DINOSAUR','ASTEROID','wipedoutby']] },
+    { words: [
+        ['SHEPHERD', null, 2, 0],
+        ['CROOK', 'Hooked staff, or dishonest person', 2, 1],
+        ['BANDIT', 'Outlaw who robs travelers, or one-armed gambling machine', 2, 2],
+        ['RACCOON', 'Ring-tailed trash raider, or nocturnal mammal', 2, 3],
+        ['MASK', 'Face covering, or eye cover for sleeping', 2, 4],
+        ['CARNIVAL', null, 2, 5]],
+      edges: [['SHEPHERD','CROOK','carries'],['CROOK','BANDIT','alsocalled'],['BANDIT','RACCOON','sharesnamewith'],['RACCOON','MASK','wears'],['MASK','CARNIVAL','wornat']] },
+    { words: [
+        ['FLORIST', null, 2, 0],
+        ['IRIS', 'Purple flag-like bloom, or Greek goddess of the rainbow', 2, 1],
+        ['EYE', 'Organ of sight, or calm center of a cyclone', 2, 2],
+        ['HURRICANE', 'Violent tropical storm, or Katrina, for one', 2, 3],
+        ['EVACUATION', 'Mass departure from danger, or emptying a building during a fire drill', 2, 4],
+        ['HIGHWAY', null, 2, 5]],
+      edges: [['FLORIST','IRIS','sells'],['IRIS','EYE','partof'],['EYE','HURRICANE','centerof'],['HURRICANE','EVACUATION','causes'],['EVACUATION','HIGHWAY','clogs']] },
+    { words: [
+        ['SURGEON', null, 2, 0],
+        ['ORGAN', 'Heart or liver, or pipe-fitted keyboard instrument', 2, 1],
+        ['CHURCH', 'Place of worship, or Sunday service site', 2, 2],
+        ['CHOIR', 'Ensemble in robes behind the pulpit, or those \'preached to\', in an idiom', 2, 3],
+        ['SOPRANO', 'Highest singing voice, or mob family in a hit HBO drama', 2, 4],
+        ['OPERA', null, 2, 5]],
+      edges: [['SURGEON','ORGAN','transplants'],['ORGAN','CHURCH','playedin'],['CHURCH','CHOIR','hosts'],['CHOIR','SOPRANO','includes'],['SOPRANO','OPERA','starsin']] },
+    { words: [
+        ['ZOOKEEPER', null, 2, 0],
+        ['PEN', 'Writing tool with ink, or enclosure for pigs', 2, 1],
+        ['SIGNATURE', 'Name written by hand, or defining trait, as of a chef', 2, 2],
+        ['CONTRACT', 'Agreement with terms, or to shrink', 2, 3],
+        ['AGENT', 'One acting for another, or 007, for one', 2, 4],
+        ['ATHLETE', null, 2, 5]],
+      edges: [['ZOOKEEPER','PEN','tends'],['PEN','SIGNATURE','makes'],['SIGNATURE','CONTRACT','seals'],['CONTRACT','AGENT','negotiatedby'],['AGENT','ATHLETE','represents']] },
+    { words: [
+        ['POTTER', null, 2, 0],
+        ['CLAY', 'Moldable earth, or red-orange tennis court surface', 2, 1],
+        ['WHEEL', 'Rolling circle on an axle, or driver\'s steering device', 2, 2],
+        ['HAMSTER', 'Small pet rodent, or Syrian pet of the golden variety', 2, 3],
+        ['CHEEK', 'Side of the face, or impudent boldness', 2, 4],
+        ['BLUSH', null, 2, 5]],
+      edges: [['POTTER','CLAY','shapes'],['CLAY','WHEEL','spunon'],['WHEEL','HAMSTER','spunby'],['HAMSTER','CHEEK','storesfoodin'],['CHEEK','BLUSH','wears']] },
+    { words: [
+        ['CALENDAR', null, 2, 0],
+        ['LEAP', 'Big jump, or kind of year with 366 days', 2, 1],
+        ['KANGAROO', 'Hopping animal from Australia, or boxing animal in cartoons', 2, 2],
+        ['POUCH', 'Flap of skin for carrying young, or small drawstring bag', 2, 3],
+        ['BELT', 'Strap around the waist, or title prize worn by a heavyweight', 2, 4],
+        ['CHAMPION', null, 2, 5]],
+      edges: [['CALENDAR','LEAP','has'],['LEAP','KANGAROO','doneby'],['KANGAROO','POUCH','has'],['POUCH','BELT','wornon'],['BELT','CHAMPION','wonby']] },
+    { words: [
+        ['TEACHER', null, 2, 0],
+        ['CHALK', 'Sidewalk art stick, or soft white rock', 2, 1],
+        ['CLIMBER', 'Person scaling a cliff, or vine that grows upward', 2, 2],
+        ['IVY', 'Evergreen that clings to old brick walls, or poison variety that itches', 2, 3],
+        ['TREE', 'Oak or maple, or what a squirrel scampers up', 2, 4],
+        ['WOOD', null, 2, 5]],
+      edges: [['TEACHER','CHALK','uses'],['CHALK','CLIMBER','usedby'],['CLIMBER','IVY','kindof'],['IVY','TREE','growson'],['TREE','WOOD','yields']] },
+    { words: [
+        ['SNAKE', null, 2, 0],
+        ['FANG', 'Venom-delivering spike of a cobra, or what a wolf bares', 2, 1],
+        ['CANINE', 'Pointed cutter beside the incisors, or member of the dog family', 2, 2],
+        ['PUPPY', 'Young pet with oversized paws, or tail-wagging newcomer', 2, 3],
+        ['CHEW', 'Gnaw on food, or rawhide toy', 2, 4],
+        ['TOOTHACHE', null, 2, 5]],
+      edges: [['SNAKE','FANG','has'],['FANG','CANINE','kindof'],['CANINE','PUPPY','includes'],['PUPPY','CHEW','gnaws'],['CHEW','TOOTHACHE','causes']] },
+    { words: [
+        ['TOOTHPASTE', null, 2, 0],
+        ['MINT', 'Herb in a mojito, or facility that stamps out cash', 2, 1],
+        ['COIN', 'Quarter or dime, or what you flip to decide', 2, 2],
+        ['FOUNTAIN', 'Trevi in Rome, for one, or spraying water feature in a plaza', 2, 3],
+        ['HOTEL', 'Place with a front desk and rooms to rent, or Marriott, for one', 2, 4],
+        ['VALET', null, 2, 5]],
+      edges: [['TOOTHPASTE','MINT','flavoredwith'],['MINT','COIN','makes'],['COIN','FOUNTAIN','tossedinto'],['FOUNTAIN','HOTEL','foundin'],['HOTEL','VALET','employs']] },
+    { words: [
+        ['VOLCANO', null, 2, 0],
+        ['CRATER', 'Bowl-shaped pit made by an impact, or Tycho on the moon, for one', 2, 1],
+        ['METEOR', 'Shooting star, or space rock burning up in the atmosphere', 2, 2],
+        ['SHOWER', 'Brief burst of rain, or spray for washing up', 2, 3],
+        ['BABY', 'Infant in a crib, or youngest member of a family', 2, 4],
+        ['BIRTHDAY', null, 2, 5]],
+      edges: [['VOLCANO','CRATER','has'],['CRATER','METEOR','dugby'],['METEOR','SHOWER','comesin'],['SHOWER','BABY','thrownfor'],['BABY','BIRTHDAY','celebrates']] },
+    { words: [
+        ['TURTLE', null, 2, 0],
+        ['SHELL', 'Oil giant with a scallop logo, or hard outer casing', 2, 1],
+        ['WALNUT', 'Dark hardwood used in gunstocks and furniture, or nut in brownies', 2, 2],
+        ['BRAIN', 'Organ weighing about three pounds, or smart person', 2, 3],
+        ['MEMORY', 'Gigabytes in a laptop, or what you recall of the past', 2, 4],
+        ['SMARTPHONE', null, 2, 5]],
+      edges: [['TURTLE','SHELL','has'],['SHELL','WALNUT','protects'],['WALNUT','BRAIN','resembles'],['BRAIN','MEMORY','stores'],['MEMORY','SMARTPHONE','foundin']] },
+    { words: [
+        ['ALCHEMIST', null, 2, 0],
+        ['LEAD', 'Element number 82, or main role in a film', 2, 1],
+        ['PENCIL', 'Yellow No. 2 writing tool, or cosmetic for shaping brows', 2, 2],
+        ['DRAFT', 'Rough first version, or cold gust through a crack', 2, 3],
+        ['WINDOW', 'Glass pane in a wall, or time frame of opportunity', 2, 4],
+        ['DESKTOP', null, 2, 5]],
+      edges: [['ALCHEMIST','LEAD','transmutes'],['LEAD','PENCIL','foundin'],['PENCIL','DRAFT','usedfor'],['DRAFT','WINDOW','comesthrough'],['WINDOW','DESKTOP','partof']] },
+    { words: [
+        ['DARKNESS', null, 2, 0],
+        ['BULB', 'Light source you screw in, or underground flower bud', 2, 1],
+        ['SOCKET', 'Wall outlet for a plug, or cup-shaped hollow for a bone\'s end', 2, 2],
+        ['SKULL', 'Bony case around the brain, or pirate flag emblem', 2, 3],
+        ['POISON', 'Toxic substance that harms if swallowed, or Snow White\'s apple filling', 2, 4],
+        ['FROG', null, 2, 5]],
+      edges: [['DARKNESS','BULB','dispelledby'],['BULB','SOCKET','screwsinto'],['SOCKET','SKULL','partof'],['SKULL','POISON','symbolof'],['POISON','FROG','secretedby']] },
+    { words: [
+        ['DRUMMER', null, 2, 0],
+        ['PULSE', 'Beat you can feel at your wrist, or edible seeds like lentils', 2, 1],
+        ['HEART', 'Organ that pumps blood, or center of something', 2, 2],
+        ['VALENTINE', 'Card sent on February 14, or sweetheart', 2, 3],
+        ['ROSE', 'Red flower in a bouquet, or past tense of rise', 2, 4],
+        ['THORN', null, 2, 5]],
+      edges: [['DRUMMER','PULSE','keeps'],['PULSE','HEART','comesfrom'],['HEART','VALENTINE','printedon'],['VALENTINE','ROSE','accompaniedby'],['ROSE','THORN','has']] },
+    { words: [
+        ['BASKET', null, 2, 0],
+        ['REED', 'Tall marsh grass, or thin vibrating strip in a woodwind', 2, 1],
+        ['CLARINET', 'Black woodwind played by Benny Goodman, or instrument with a bell and keys', 2, 2],
+        ['SQUEAK', 'High-pitched creak, or sound a mouse makes', 2, 3],
+        ['HINGE', 'Metal joint that lets a lid swing, or point on which something depends', 2, 4],
+        ['DOOR', null, 2, 5]],
+      edges: [['BASKET','REED','wovenfrom'],['REED','CLARINET','partof'],['CLARINET','SQUEAK','proneto'],['SQUEAK','HINGE','comesfrom'],['HINGE','DOOR','partof']] },
+    { words: [
+        ['DETECTIVE', null, 2, 0],
+        ['CLUE', 'Evidence at a crime scene, or hint in a treasure hunt', 2, 1],
+        ['CROSSWORD', 'Black-and-white puzzle filled with letters, or Will Shortz\'s specialty', 2, 2],
+        ['GRID', 'Pattern of squares, or network of electrical lines', 2, 3],
+        ['POWER', 'Electricity from an outlet, or authority over others', 2, 4],
+        ['PRESIDENT', null, 2, 5]],
+      edges: [['DETECTIVE','CLUE','seeks'],['CLUE','CROSSWORD','foundin'],['CROSSWORD','GRID','builton'],['GRID','POWER','supplies'],['POWER','PRESIDENT','heldby']] },
+    { words: [
+        ['BLACKSMITH', null, 2, 0],
+        ['ANVIL', 'Wile E. Coyote\'s falling weight, or iron block struck by hammer', 2, 1],
+        ['EAR', 'Organ with a lobe, or head of grain', 2, 2],
+        ['CORN', 'Maize, or hardened patch of skin on a foot', 2, 3],
+        ['TOE', 'Digit that might get stubbed, or front of a shoe', 2, 4],
+        ['BALLET', null, 2, 5]],
+      edges: [['BLACKSMITH','ANVIL','uses'],['ANVIL','EAR','foundin'],['EAR','CORN','partof'],['CORN','TOE','foundon'],['TOE','BALLET','usedin']] },
+    { words: [
+        ['SHERIFF', null, 2, 0],
+        ['BADGE', 'Detective\'s shield, or pin showing you\'re an employee', 2, 1],
+        ['SCOUT', 'Talent spotter for a pro team, or youth who earns merit awards', 2, 2],
+        ['COOKIE', 'Chocolate chip treat, or small file a website saves on your computer', 2, 3],
+        ['BROWSER', 'Chrome or Firefox, for one, or shopper just looking', 2, 4],
+        ['HISTORY', null, 2, 5]],
+      edges: [['SHERIFF','BADGE','wears'],['BADGE','SCOUT','earnedby'],['SCOUT','COOKIE','sells'],['COOKIE','BROWSER','storedby'],['BROWSER','HISTORY','keeps']] },
+    { words: [
+        ['COMPOSER', null, 2, 0],
+        ['SCORE', 'Twenty, as in \'four ___ and seven years ago\', or tally in a game', 2, 1],
+        ['REFEREE', 'Official in black and white stripes, or neutral who settles a dispute', 2, 2],
+        ['WHISTLE', 'Shrill signal blown in sports, or sound made with puckered lips', 2, 3],
+        ['PEA', 'Small round green seed in a pod, or tiny rolling ball that makes a shrill sound', 2, 4],
+        ['PRINCESS', null, 2, 5]],
+      edges: [['COMPOSER','SCORE','writes'],['SCORE','REFEREE','calledby'],['REFEREE','WHISTLE','blows'],['WHISTLE','PEA','contains'],['PEA','PRINCESS','troubles']] },
+    { words: [
+        ['CAMPFIRE', null, 2, 0],
+        ['MATCH', 'Small stick struck to make a flame, or contest between two players', 2, 1],
+        ['TENNIS', 'Wimbledon sport, or game with love, deuce and advantage', 2, 2],
+        ['RACKET', 'Badminton equipment, or strung hitting tool', 2, 3],
+        ['NOISE', 'Sound that is loud or unwanted, or static on a radio', 2, 4],
+        ['HEADACHE', null, 2, 5]],
+      edges: [['CAMPFIRE','MATCH','needs'],['MATCH','TENNIS','foundin'],['TENNIS','RACKET','needs'],['RACKET','NOISE','kindof'],['NOISE','HEADACHE','causes']] },
+    { words: [
+        ['RESTAURANT', null, 2, 0],
+        ['WAITER', 'Server at a table, or person who brings your menu', 2, 1],
+        ['TIP', 'Gratuity, or pointed end', 2, 2],
+        ['ICEBERG', 'Floating mass of ice, or lettuce with a crisp, pale head', 2, 3],
+        ['TITANIC', 'Famous liner lost in 1912, or big ship with an "unsinkable" reputation', 2, 4],
+        ['MOVIE', null, 2, 5]],
+      edges: [['RESTAURANT','WAITER','needs'],['WAITER','TIP','earns'],['TIP','ICEBERG','partof'],['ICEBERG','TITANIC','met'],['TITANIC','MOVIE','inspired']] },
+    { words: [
+        ['SOUP', null, 2, 0],
+        ['STOCK', 'Liquid base for gravy, or ownership shares traded on an exchange', 2, 1],
+        ['COMPANY', 'Business firm, or guests visiting your home', 2, 2],
+        ['BRAND', 'Product name like Nike or Coke, or mark made with a hot iron', 2, 3],
+        ['CATTLE', 'Herd animals raised for beef, or moo-ing group', 2, 4],
+        ['COWBOY', null, 2, 5]],
+      edges: [['SOUP','STOCK','uses'],['STOCK','COMPANY','issuedby'],['COMPANY','BRAND','owns'],['BRAND','CATTLE','marks'],['CATTLE','COWBOY','herdedby']] },
+    { words: [
+        ['PHONE', null, 2, 0],
+        ['CHARGE', 'Fee on a statement, or what a dead battery lacks', 2, 1],
+        ['BILL', 'Utility statement due monthly, or a proposed law awaiting a vote', 2, 2],
+        ['DUCK', 'Quacking waterfowl, or yellow squeaky toy', 2, 3],
+        ['BATH', 'Warm soak before bed, or tub full of suds', 2, 4],
+        ['ROBE', null, 2, 5]],
+      edges: [['PHONE','CHARGE','needs'],['CHARGE','BILL','foundin'],['BILL','DUCK','partof'],['DUCK','BATH','foundin'],['BATH','ROBE','followedby']] },
+    { words: [
+        ['LAUNDRY', null, 2, 0],
+        ['IRON', 'Pressing matter?, or element with symbol Fe', 2, 1],
+        ['METAL', 'Shiny element like copper or tin, or loud genre of rock', 2, 2],
+        ['ARMOR', 'Protective suit worn in battle, or plating on a tank', 2, 3],
+        ['KNIGHT', 'Sir Lancelot, for one, or horse-shaped game piece', 2, 4],
+        ['CHESS', null, 2, 5]],
+      edges: [['LAUNDRY','IRON','uses'],['IRON','METAL','kindof'],['METAL','ARMOR','forgedinto'],['ARMOR','KNIGHT','wornby'],['KNIGHT','CHESS','piecein']] },
+    { words: [
+        ['CARPENTER', null, 2, 0],
+        ['HAMMER', 'Thor\'s weapon, or tool with a claw end', 2, 1],
+        ['NAIL', 'Something to hit on the head?, or thin metal fastener', 2, 2],
+        ['FINGER', 'Digit, or pinky or ring, e.g.', 2, 3],
+        ['GLOVE', 'Mitten\'s cousin, or hand covering worn in winter', 2, 4],
+        ['BOXER', null, 2, 5]],
+      edges: [['CARPENTER','HAMMER','needs'],['HAMMER','NAIL','drives'],['NAIL','FINGER','partof'],['FINGER','GLOVE','foundin'],['GLOVE','BOXER','wornby']] },
+    { words: [
+        ['PIZZA', null, 2, 0],
+        ['DOUGH', 'Flour and water mixture, kneaded, or Cookie ___ (raw, tasty)', 2, 1],
+        ['MONEY', 'Cash or coins, or what a job pays', 2, 2],
+        ['PIGGYBANK', 'Ceramic coin saver with a slot on its back, or kid\'s thrifty friend', 2, 3],
+        ['CHILD', 'Youngster, or one under age', 2, 4],
+        ['PLAYGROUND', null, 2, 5]],
+      edges: [['PIZZA','DOUGH','needs'],['DOUGH','MONEY','slangfor'],['MONEY','PIGGYBANK','savedin'],['PIGGYBANK','CHILD','ownedby'],['CHILD','PLAYGROUND','playsat']] },
+    { words: [
+        ['GIFT', null, 2, 0],
+        ['RIBBON', 'Satin strip used for tying, or prize for second place', 2, 1],
+        ['BOW', 'Looped decorative knot, or stick drawn across strings', 2, 2],
+        ['VIOLIN', 'Instrument played under the chin, or Stradivarius, for one', 2, 3],
+        ['CASE', 'Container for glasses, or matter argued before a judge', 2, 4],
+        ['LAWSUIT', null, 2, 5]],
+      edges: [['GIFT','RIBBON','toppedwith'],['RIBBON','BOW','tiedinto'],['BOW','VIOLIN','usedon'],['VIOLIN','CASE','keptin'],['CASE','LAWSUIT','canbecome']] },
+    { words: [
+        ['BALLOON', null, 2, 0],
+        ['POP', 'Burst with a bang, or dad, informally', 2, 1],
+        ['SODA', 'Fizzy drink, or Club ___ (bubbly water)', 2, 2],
+        ['STRAW', 'Tube for sipping, or dried stalks used as bedding', 2, 3],
+        ['FARMER', 'Person who grows crops, or tractor driver', 2, 4],
+        ['CROW', null, 2, 5]],
+      edges: [['BALLOON','POP','can'],['POP','SODA','alsocalled'],['SODA','STRAW','sippedthrough'],['STRAW','FARMER','baledby'],['FARMER','CROW','shoos']] },
+    { words: [
+        ['LOCOMOTIVE', null, 2, 0],
+        ['TRACK', 'Path for a runner, or follow a trail', 2, 1],
+        ['SONG', 'Tune with verses, or something sung in the shower', 2, 2],
+        ['BIRD', 'Feathered flyer that builds nests, or ___ of paradise', 2, 3],
+        ['WORM', 'Wriggler found in soil, or self-copying malware', 2, 4],
+        ['NETWORK', null, 2, 5]],
+      edges: [['LOCOMOTIVE','TRACK','needs'],['TRACK','SONG','kindof'],['SONG','BIRD','sungby'],['BIRD','WORM','catches'],['WORM','NETWORK','spreadsthrough']] },
+    { words: [
+        ['WITCH', null, 2, 0],
+        ['BROOM', 'Long-handled tool with straw bristles, or flying vehicle in fairy tales', 2, 1],
+        ['SWEEP', 'Clear dust from the floor, or win every contest', 2, 2],
+        ['ELECTION', 'Time to cast ballots, or race for office', 2, 3],
+        ['NOVEMBER', 'Eleventh month of the year, or month when clocks fall back', 2, 4],
+        ['TURKEY', null, 2, 5]],
+      edges: [['WITCH','BROOM','needs'],['BROOM','SWEEP','usedto'],['SWEEP','ELECTION','canwin'],['ELECTION','NOVEMBER','heldin'],['NOVEMBER','TURKEY','features']] },
+    { words: [
+        ['LAWN', null, 2, 0],
+        ['MOLE', 'Underground agent?, or burrowing animal with velvety fur', 2, 1],
+        ['SPY', 'Bond, for one, or secret watcher', 2, 2],
+        ['CODE', 'Secret cipher, or set of laws like a building ___', 2, 3],
+        ['PROGRAMMER', 'Person who writes software, or one who builds apps', 2, 4],
+        ['DEADLINE', null, 2, 5]],
+      edges: [['LAWN','MOLE','visitedby'],['MOLE','SPY','kindof'],['SPY','CODE','uses'],['CODE','PROGRAMMER','writtenby'],['PROGRAMMER','DEADLINE','faces']] },
+    { words: [
+        ['LAWYER', null, 2, 0],
+        ['BAR', 'Rod used for weightlifting, or place serving drinks', 2, 1],
+        ['COCKTAIL', 'Gimlet or Manhattan, or mixed drink served in a glass', 2, 2],
+        ['OLIVE', 'Popeye\'s girlfriend, or small fruit pressed for oil', 2, 3],
+        ['GREEN', 'Color of grass, or putting surface on a golf course', 2, 4],
+        ['LETTUCE', null, 2, 5]],
+      edges: [['LAWYER','BAR','needs'],['BAR','COCKTAIL','serves'],['COCKTAIL','OLIVE','needs'],['OLIVE','GREEN','kindof'],['GREEN','LETTUCE','includes']] },
+    { words: [
+        ['TRAFFIC', null, 2, 0],
+        ['JAM', 'Squeeze tightly into a space, or spread for toast', 2, 1],
+        ['FRUIT', 'Apple or banana, or sweet food from a tree', 2, 2],
+        ['BAT', 'Flying nocturnal mammal, or wooden club swung in a ball game', 2, 3],
+        ['CRICKET', 'Chirping hopper, or British sport with wickets', 2, 4],
+        ['INSECT', null, 2, 5]],
+      edges: [['TRAFFIC','JAM','causes'],['JAM','FRUIT','madefrom'],['FRUIT','BAT','eatenby'],['BAT','CRICKET','usedin'],['CRICKET','INSECT','kindof']] },
+    { words: [
+        ['PIANO', null, 2, 0],
+        ['KEY', 'Small metal item on a ring, or letter button on a typewriter', 2, 1],
+        ['LOCK', 'Door fastener, or curl of hair', 2, 2],
+        ['VAULT', 'Bank\'s strongroom, or leap over a padded horse', 2, 3],
+        ['GYMNAST', 'Athlete who swings on bars, or one who tumbles on a mat', 2, 4],
+        ['OLYMPICS', null, 2, 5]],
+      edges: [['PIANO','KEY','has'],['KEY','LOCK','opens'],['LOCK','VAULT','secures'],['VAULT','GYMNAST','jumpedby'],['GYMNAST','OLYMPICS','competesin']] },
+    { words: [
+        ['TOOTH', null, 2, 0],
+        ['CROWN', 'Royal circlet, or dental cap', 2, 1],
+        ['HEAD', 'Body part with a brain, or frothy top of a poured drink', 2, 2],
+        ['BEER', 'Frothy brew from a tap, or hop-flavored drink', 2, 3],
+        ['BARLEY', 'Grain used for malting, or soup grain paired with mushrooms', 2, 4],
+        ['FIELD', null, 2, 5]],
+      edges: [['TOOTH','CROWN','cappedby'],['CROWN','HEAD','wornon'],['HEAD','BEER','foamon'],['BEER','BARLEY','brewedfrom'],['BARLEY','FIELD','growsin']] },
+    { words: [
+        ['BASEBALL', null, 2, 0],
+        ['PITCH', 'Sales talk, or highness or lowness of a sound', 2, 1],
+        ['TAR', 'Sailor, in old slang, or sticky black substance', 2, 2],
+        ['ROAD', 'Hit the ___, or route for cars', 2, 3],
+        ['TRIP', 'Stumble, or an outing, even just to the store', 2, 4],
+        ['VACATION', null, 2, 5]],
+      edges: [['BASEBALL','PITCH','needs'],['PITCH','TAR','kindof'],['TAR','ROAD','paves'],['ROAD','TRIP','usedfor'],['TRIP','VACATION','partof']] },
+    { words: [
+        ['ELEPHANT', null, 2, 0],
+        ['TRUNK', 'Car\'s rear storage space, or Dumbo\'s long nose', 2, 1],
+        ['LUGGAGE', 'Suitcases and duffels, or baggage for a trip', 2, 2],
+        ['AIRPORT', 'Place with gates and runways, or hub with terminals', 2, 3],
+        ['PILOT', 'TV show\'s trial episode, or aviator', 2, 4],
+        ['COCKPIT', null, 2, 5]],
+      edges: [['ELEPHANT','TRUNK','has'],['TRUNK','LUGGAGE','kindof'],['LUGGAGE','AIRPORT','foundin'],['AIRPORT','PILOT','needs'],['PILOT','COCKPIT','foundin']] },
+    { words: [
+        ['CLOCK', null, 2, 0],
+        ['PENDULUM', 'Weight on a rod that swings back and forth, or Foucault\'s proof that Earth rotates', 2, 1],
+        ['HYPNOTIST', 'Stage performer who says \'You\'re getting sleepy\', or person who puts volunteers to sleep on stage', 2, 2],
+        ['TRANCE', 'Dazed, half-conscious state, or electronic dance genre', 2, 3],
+        ['BEAT', 'Rhythm in a song, or a reporter\'s regular territory', 2, 4],
+        ['COP', null, 2, 5]],
+      edges: [['CLOCK','PENDULUM','has'],['PENDULUM','HYPNOTIST','usedby'],['HYPNOTIST','TRANCE','induces'],['TRANCE','BEAT','has'],['BEAT','COP','walkedby']] },
+    { words: [
+        ['GOLF', null, 2, 0],
+        ['CLUB', 'Card suit with three-leaf symbols, or nightspot with a bouncer', 2, 1],
+        ['SANDWICH', 'Lunch named for an English earl, or two slices with filling', 2, 2],
+        ['SUBMARINE', 'Yellow one in a Beatles song, or vessel that travels underwater', 2, 3],
+        ['SONAR', 'Ping source?, or device that uses sound waves to find objects', 2, 4],
+        ['DOLPHIN', null, 2, 5]],
+      edges: [['GOLF','CLUB','needs'],['CLUB','SANDWICH','kindof'],['SANDWICH','SUBMARINE','sharesname'],['SUBMARINE','SONAR','needs'],['SONAR','DOLPHIN','usedby']] },
+    { words: [
+        ['PAINTER', null, 2, 0],
+        ['CANVAS', 'Surface for oils, or heavy cloth for sails', 2, 1],
+        ['TENT', 'Pitched at a campsite, or portable shelter for sleeping outdoors', 2, 2],
+        ['CIRCUS', 'Barnum\'s Greatest Show on Earth, or show with acrobats and lions', 2, 3],
+        ['CLOWN', 'Bozo, for one, or big-shoed entertainer', 2, 4],
+        ['NOSE', null, 2, 5]],
+      edges: [['PAINTER','CANVAS','needs'],['CANVAS','TENT','partof'],['TENT','CIRCUS','houses'],['CIRCUS','CLOWN','needs'],['CLOWN','NOSE','has']] },
+    { words: [
+        ['SNOWMAN', null, 2, 0],
+        ['CARROT', 'Orange root vegetable, or veggie that\'s good for your eyesight', 2, 1],
+        ['RABBIT', 'Hopping pet with long ears, or Bugs Bunny, for one', 2, 2],
+        ['HAT', 'Something you wear on your head, or Top ___ (formal headwear)', 2, 3],
+        ['MAGICIAN', 'Houdini, for one, or performer of tricks', 2, 4],
+        ['AUDIENCE', null, 2, 5]],
+      edges: [['SNOWMAN','CARROT','needs'],['CARROT','RABBIT','eatenby'],['RABBIT','HAT','foundin'],['HAT','MAGICIAN','wornby'],['MAGICIAN','AUDIENCE','needs']] },
+    { words: [
+        ['GRAPE', null, 2, 0],
+        ['WINE', 'Merlot or chardonnay, or red or white drink at dinner', 2, 1],
+        ['CORK', 'Plug for a bottle, or light bark of an oak', 2, 2],
+        ['BOARD', 'Plank of wood, or get on a plane', 2, 3],
+        ['GAME', 'Hide-and-seek, for one, or contest with rules', 2, 4],
+        ['WINNER', null, 2, 5]],
+      edges: [['GRAPE','WINE','becomes'],['WINE','CORK','needs'],['CORK','BOARD','partof'],['BOARD','GAME','usedin'],['GAME','WINNER','crowns']] },
+    { words: [
+        ['HORSE', null, 2, 0],
+        ['SHOE', 'Footwear with a sole, or sneaker, for one', 2, 1],
+        ['LACE', 'Delicate openwork fabric, or spike, as a drink', 2, 2],
+        ['DRESS', 'One-piece garment, or put on clothes', 2, 3],
+        ['WEDDING', 'Ceremony with a bride and groom, or marriage ceremony', 2, 4],
+        ['VOW', null, 2, 5]],
+      edges: [['HORSE','SHOE','needs'],['SHOE','LACE','needs'],['LACE','DRESS','partof'],['DRESS','WEDDING','foundin'],['WEDDING','VOW','needs']] },
+    { words: [
+        ['HOSPITAL', null, 2, 0],
+        ['NURSE', 'Caregiver in scrubs, or woman who feeds a baby', 2, 1],
+        ['SHARK', 'Predator with a dorsal fin, or one who preys on borrowers', 2, 2],
+        ['TANK', 'Armored army vehicle, or glass home for goldfish', 2, 3],
+        ['FUEL', 'Gas or diesel, or something stoked in a furnace', 2, 4],
+        ['ENGINE', null, 2, 5]],
+      edges: [['HOSPITAL','NURSE','employs'],['NURSE','SHARK','sharesnamewith'],['SHARK','TANK','keptin'],['TANK','FUEL','holds'],['FUEL','ENGINE','fuels']] },
+    { words: [
+        ['FISHERMAN', null, 2, 0],
+        ['BASS', 'Thump in a hip-hop track, or freshwater fish', 2, 1],
+        ['GUITAR', 'Instrument with six strings, often, or instrument you strum', 2, 2],
+        ['PICK', 'Tool for chipping ice, or choose', 2, 3],
+        ['MINER', 'One who might strike it rich?, or underground digger', 2, 4],
+        ['GOLD', null, 2, 5]],
+      edges: [['FISHERMAN','BASS','catches'],['BASS','GUITAR','kindof'],['GUITAR','PICK','needs'],['PICK','MINER','usedby'],['MINER','GOLD','seeks']] },
+    { words: [
+        ['SAILOR', null, 2, 0],
+        ['COMPASS', 'Tool for drawing circles, or navigator\'s instrument', 2, 1],
+        ['NEEDLE', 'Pointy bit of a pine?, or doctor\'s injection tool', 2, 2],
+        ['THREAD', 'Recurring theme in a story, or spool\'s contents', 2, 3],
+        ['FORUM', 'Roman marketplace, or online message board', 2, 4],
+        ['WEBSITE', null, 2, 5]],
+      edges: [['SAILOR','COMPASS','needs'],['COMPASS','NEEDLE','needs'],['NEEDLE','THREAD','pulls'],['THREAD','FORUM','foundin'],['FORUM','WEBSITE','foundin']] },
+    { words: [
+        ['SCHOOL', null, 2, 0],
+        ['BELL', 'Liberty ___ in Philadelphia, or ringing object', 2, 1],
+        ['PEPPER', 'Jalapeno or habanero, or spicy black grind for eggs', 2, 2],
+        ['SALT', 'Dead Sea\'s abundant mineral, or crystals sprinkled on fries', 2, 3],
+        ['SHAKER', 'Cocktail mixer, or dispenser with holes on top', 2, 4],
+        ['DINER', null, 2, 5]],
+      edges: [['SCHOOL','BELL','needs'],['BELL','PEPPER','sharesname'],['PEPPER','SALT','pairswith'],['SALT','SHAKER','pouredfrom'],['SHAKER','DINER','foundin']] },
+    { words: [
+        ['TROUT', null, 2, 0],
+        ['RIVER', 'Mississippi or Nile, or it flows toward the sea', 2, 1],
+        ['BANK', 'Edge of a stream, or place to save money', 2, 2],
+        ['BLOOD', 'Red fluid in veins, or ___ type, like A or O', 2, 3],
+        ['DONOR', 'One who gives to charity, or person who gives a kidney', 2, 4],
+        ['HERO', null, 2, 5]],
+      edges: [['TROUT','RIVER','foundin'],['RIVER','BANK','has'],['BANK','BLOOD','stores'],['BLOOD','DONOR','givenby'],['DONOR','HERO','seenas']] },
+    { words: [
+        ['CHEESE', null, 2, 0],
+        ['MOUSE', 'Small rodent a cat chases, or Mickey, for one', 2, 1],
+        ['COMPUTER', 'Laptop or desktop, or machine that runs apps', 2, 2],
+        ['SCREEN', 'Mesh in a window, or part of a phone you tap', 2, 3],
+        ['CINEMA', 'Movie theater, or the art of film', 2, 4],
+        ['HOLLYWOOD', null, 2, 5]],
+      edges: [['CHEESE','MOUSE','eatenby'],['MOUSE','COMPUTER','partof'],['COMPUTER','SCREEN','needs'],['SCREEN','CINEMA','foundin'],['CINEMA','HOLLYWOOD','madein']] },
+    { words: [
+        ['TULIP', null, 2, 0],
+        ['SPRING', 'Leap suddenly, or march-to-May season', 2, 1],
+        ['COIL', 'Curl up, as a snake does, or wire wound in loops', 2, 2],
+        ['MATTRESS', 'What the Princess felt a pea through, or soft slab for lying on', 2, 3],
+        ['BED', 'Garden plot, or furniture with a headboard', 2, 4],
+        ['SLEEP', null, 2, 5]],
+      edges: [['TULIP','SPRING','foundin'],['SPRING','COIL','kindof'],['COIL','MATTRESS','partof'],['MATTRESS','BED','partof'],['BED','SLEEP','usedfor']] },
+    { words: [
+        ['SOCCER', null, 2, 0],
+        ['BALL', 'Cinderella\'s big night, or round object kicked toward a goal', 2, 1],
+        ['GOWN', 'Graduation garment, or fancy dress for prom', 2, 2],
+        ['SILK', 'Road that linked China and Rome, or smooth, shiny fabric', 2, 3],
+        ['COCOON', 'Snug protective shell, or wrap yourself up cozily', 2, 4],
+        ['BUTTERFLY', null, 2, 5]],
+      edges: [['SOCCER','BALL','needs'],['BALL','GOWN','mayneed'],['GOWN','SILK','madeof'],['SILK','COCOON','foundin'],['COCOON','BUTTERFLY','causes']] },
+    { words: [
+        ['FERN', null, 2, 0],
+        ['PLANT', 'Put evidence where it\'ll be found, as in a frame-up?, or green thing in a pot', 2, 1],
+        ['FACTORY', 'Warhol\'s Silver ___, or place where goods are made', 2, 2],
+        ['WORKER', 'Bee that isn\'t a queen or a drone, or employee', 2, 3],
+        ['UNION', 'Blue side in 1861, or marriage or merger', 2, 4],
+        ['STRIKE', null, 2, 5]],
+      edges: [['FERN','PLANT','kindof'],['PLANT','FACTORY','alsocalled'],['FACTORY','WORKER','needs'],['WORKER','UNION','joins'],['UNION','STRIKE','causes']] },
+    { words: [
+        ['THIEF', null, 2, 0],
+        ['FUGITIVE', 'Person on the run, or title of a 1993 Harrison Ford film', 2, 1],
+        ['CELL', 'Basic unit of living things, or one compartment in a honeycomb', 2, 2],
+        ['BATTERY', 'Something that can be charged in more than one way, or AA or AAA', 2, 3],
+        ['FLASHLIGHT', 'Torch, to a Brit, or handheld beam for dark places', 2, 4],
+        ['CAMPING', null, 2, 5]],
+      edges: [['THIEF','FUGITIVE','becomes'],['FUGITIVE','CELL','heldin'],['CELL','BATTERY','partof'],['BATTERY','FLASHLIGHT','foundin'],['FLASHLIGHT','CAMPING','usedfor']] },
+    { words: [
+        ['HAMBURGER', null, 2, 0],
+        ['BEEF', 'Where\'s the ___? (1984 ad line), or steak, for one', 2, 1],
+        ['COW', 'Animal that says moo, or dairy farm animal', 2, 2],
+        ['MOON', 'Full one, perhaps, on a clear night, or earth\'s only natural satellite', 2, 3],
+        ['TIDE', 'Ebb or flow, or detergent brand with an orange box', 2, 4],
+        ['SEAWEED', null, 2, 5]],
+      edges: [['HAMBURGER','BEEF','needs'],['BEEF','COW','partof'],['COW','MOON','jumpedover'],['MOON','TIDE','causes'],['TIDE','SEAWEED','washesup']] },
+    { words: [
+        ['HOLE', null, 2, 0],
+        ['BAGEL', 'Boiled-then-baked roll, or Sunday brunch staple', 2, 1],
+        ['RING', 'Piece of jewelry, or boxing arena', 2, 2],
+        ['SATURN', 'Sixth planet from the sun, or Roman god of agriculture', 2, 3],
+        ['PROBE', 'Space instrument sent to explore, or to investigate deeply', 2, 4],
+        ['MARS', null, 2, 5]],
+      edges: [['HOLE','BAGEL','partof'],['BAGEL','RING','shapedlike'],['RING','SATURN','partof'],['SATURN','PROBE','visitedby'],['PROBE','MARS','sentto']] },
+    { words: [
+        ['VOWEL', null, 2, 0],
+        ['LETTER', 'Character of the alphabet, or note delivered by mail', 2, 1],
+        ['STAMP', 'Postage sticker, or to bring a foot down hard', 2, 2],
+        ['PASSPORT', 'Photo ID booklet for crossing borders, or one holding entry visas', 2, 3],
+        ['CUSTOMS', 'Border checkpoint, or taxes on imports', 2, 4],
+        ['TRAVELER', null, 2, 5]],
+      edges: [['VOWEL','LETTER','kindof'],['LETTER','STAMP','needs'],['STAMP','PASSPORT','foundin'],['PASSPORT','CUSTOMS','checkedat'],['CUSTOMS','TRAVELER','delays']] },
+    { words: [
+        ['TOMATO', null, 2, 0],
+        ['KETCHUP', 'Red condiment for fries, or Heinz product', 2, 1],
+        ['JAR', 'Glass container with a lid, or Mason, for one', 2, 2],
+        ['NECK', 'Part between head and shoulders, or narrow part of a guitar', 2, 3],
+        ['TIE', 'Even score, or dad\'s Father\'s Day gift', 2, 4],
+        ['OVERTIME', null, 2, 5]],
+      edges: [['TOMATO','KETCHUP','becomes'],['KETCHUP','JAR','keptin'],['JAR','NECK','has'],['NECK','TIE','wears'],['TIE','OVERTIME','forces']] },
+    { words: [
+        ['FEATHER', null, 2, 0],
+        ['WING', 'Backstage space at the side of a stage, or a bird\'s flapper', 2, 1],
+        ['OWL', 'Nocturnal hooter, or wise bird of folklore', 2, 2],
+        ['CAVE', 'Plato\'s allegory setting, or give way, with "in"', 2, 3],
+        ['MOUNTAIN', 'Everest, for one, or a heap, as of laundry', 2, 4],
+        ['RANGE', null, 2, 5]],
+      edges: [['FEATHER','WING','partof'],['WING','OWL','partof'],['OWL','CAVE','foundin'],['CAVE','MOUNTAIN','foundin'],['MOUNTAIN','RANGE','partof']] },
+    { words: [
+        ['QUILL', null, 2, 0],
+        ['INK', 'Signature substance?, or tattoo fluid', 2, 1],
+        ['SQUID', 'Giant one has the largest eyes in the animal kingdom, or calamari', 2, 2],
+        ['TENTACLE', 'Flexible limb of a cephalopod, or grasping arm of a movie monster', 2, 3],
+        ['ALIEN', 'Visitor from another planet, or foreigner', 2, 4],
+        ['SPACE', null, 2, 5]],
+      edges: [['QUILL','INK','needs'],['INK','SQUID','foundin'],['SQUID','TENTACLE','has'],['TENTACLE','ALIEN','sportedby'],['ALIEN','SPACE','comesfrom']] },
+    { words: [
+        ['LAPTOP', null, 2, 0],
+        ['ELECTRICITY', 'Power from a socket, or what flows through wires', 2, 1],
+        ['LIGHTNING', 'Zeus\'s weapon, or bright electrical flash', 2, 2],
+        ['BOLT', 'Streak across the sky in a storm, or Usain, the Olympic record-setter', 2, 3],
+        ['SPRINTER', 'Short-distance racer in track events, or runner in the 100-meter dash', 2, 4],
+        ['MARATHON', null, 2, 5]],
+      edges: [['LAPTOP','ELECTRICITY','needs'],['ELECTRICITY','LIGHTNING','foundin'],['LIGHTNING','BOLT','includes'],['BOLT','SPRINTER','sharesname'],['SPRINTER','MARATHON','opposite']] },
+    { words: [
+        ['FIRE', null, 2, 0],
+        ['ASH', 'Residue after burning, or tree whose wood makes baseball bats', 2, 1],
+        ['MAPLE', 'Canadian leaf tree, or source of sap', 2, 2],
+        ['SYRUP', 'Sticky pour for flapjacks, or cough medicine liquid', 2, 3],
+        ['PANCAKE', 'Flat griddle cake, or Shrove Tuesday treat', 2, 4],
+        ['BREAKFAST', null, 2, 5]],
+      edges: [['FIRE','ASH','leaves'],['ASH','MAPLE','kindof'],['MAPLE','SYRUP','yields'],['SYRUP','PANCAKE','tops'],['PANCAKE','BREAKFAST','partof']] },
+    { words: [
+        ['CLOUD', null, 2, 0],
+        ['RAIN', 'Wet weather, or drops from the sky', 2, 1],
+        ['PUDDLE', 'Small pool of water on the ground, or where a kid jumps in boots', 2, 2],
+        ['STREET', 'Road lined with houses, or Main ___ (shop-lined road)', 2, 3],
+        ['CITY', 'Large town, or Big Apple, for one', 2, 4],
+        ['COUNTRY', null, 2, 5]],
+      edges: [['CLOUD','RAIN','causes'],['RAIN','PUDDLE','causes'],['PUDDLE','STREET','foundin'],['STREET','CITY','partof'],['CITY','COUNTRY','partof']] },
+    { words: [
+        ['SEED', null, 2, 0],
+        ['APPLE', 'Fruit with a core, or maker of the iPhone', 2, 1],
+        ['NEWTON', 'Laws-of-motion physicist, or unit of force', 2, 2],
+        ['GRAVITY', 'Force that pulls things down, or seriousness', 2, 3],
+        ['PARACHUTE', 'Silk canopy for a jump, or emergency pack on a plane', 2, 4],
+        ['SKYDIVER', null, 2, 5]],
+      edges: [['SEED','APPLE','growsinto'],['APPLE','NEWTON','fellon'],['NEWTON','GRAVITY','explained'],['GRAVITY','PARACHUTE','resistedby'],['PARACHUTE','SKYDIVER','wornby']] },
+    { words: [
+        ['SPIDER', null, 2, 0],
+        ['WEB', 'Berners-Lee\'s creation, with World Wide, or silky trap for flies', 2, 1],
+        ['CORNER', 'Where two walls meet, or where Little Jack Horner sat', 2, 2],
+        ['ROOM', 'Orwell\'s 101, or bedroom or kitchen, e.g.', 2, 3],
+        ['HOUSE', 'Family\'s home, or White ___', 2, 4],
+        ['SUBURB', null, 2, 5]],
+      edges: [['SPIDER','WEB','livesin'],['WEB','CORNER','foundin'],['CORNER','ROOM','partof'],['ROOM','HOUSE','partof'],['HOUSE','SUBURB','foundin']] },
+    { words: [
+        ['POODLE', null, 2, 0],
+        ['DOG', 'Man\'s best friend, or hot ___ at the ball game', 2, 1],
+        ['BONE', 'Femur or tibia, or what you have to pick with someone', 2, 2],
+        ['SKELETON', 'Hanging in a biology classroom, or minimal staff', 2, 3],
+        ['HALLOWEEN', 'Trick-or-treat night, or October 31', 2, 4],
+        ['PUMPKIN', null, 2, 5]],
+      edges: [['POODLE','DOG','kindof'],['DOG','BONE','buries'],['BONE','SKELETON','partof'],['SKELETON','HALLOWEEN','decorates'],['HALLOWEEN','PUMPKIN','features']] },
+    { words: [
+        ['YOLK', null, 2, 0],
+        ['EGG', 'Breakfast item with a shell, or oval from a hen', 2, 1],
+        ['EASTER', 'Spring holiday, or day of Resurrection', 2, 2],
+        ['BUNNY', 'Rabbit, or Bugs, for one', 2, 3],
+        ['HOP', 'Jump on one foot, or beer ingredient', 2, 4],
+        ['BREWERY', null, 2, 5]],
+      edges: [['YOLK','EGG','partof'],['EGG','EASTER','huntedat'],['EASTER','BUNNY','brings'],['BUNNY','HOP','does'],['HOP','BREWERY','usedin']] },
+    { words: [
+        ['UDDER', null, 2, 0],
+        ['MILK', 'Dairy drink, or to exploit for gain', 2, 1],
+        ['MUSTACHE', 'Hair above the lip, or Dali\'s waxed trademark', 2, 2],
+        ['BARBER', 'Hair cutter at a shop, or Sweeney Todd\'s trade', 2, 3],
+        ['SCISSORS', 'Two-bladed cutter, or hand in rock-paper game', 2, 4],
+        ['HAIRCUT', null, 2, 5]],
+      edges: [['UDDER','MILK','gives'],['MILK','MUSTACHE','leaves'],['MUSTACHE','BARBER','trimmedby'],['BARBER','SCISSORS','wields'],['SCISSORS','HAIRCUT','gives']] },
+    { words: [
+        ['CAMERA', null, 2, 0],
+        ['LENS', 'Part of the eye that focuses light, or curved glass in eyeglasses', 2, 1],
+        ['TELESCOPE', 'Galileo used one to spot Jupiter\'s four big moons, or long tube for viewing faraway things', 2, 2],
+        ['STAR', 'Our sun, or Hollywood A-lister', 2, 3],
+        ['GALAXY', 'The Milky Way, for one, or a Samsung phone line', 2, 4],
+        ['UNIVERSE', null, 2, 5]],
+      edges: [['CAMERA','LENS','needs'],['LENS','TELESCOPE','partof'],['TELESCOPE','STAR','spots'],['STAR','GALAXY','partof'],['GALAXY','UNIVERSE','partof']] },
+    { words: [
+        ['BARNACLE', null, 2, 0],
+        ['ANCHOR', 'Heavy hook lowered to hold a vessel, or Walter Cronkite\'s role at CBS', 2, 1],
+        ['NEWS', 'Reports of current events, or fresh tidings', 2, 2],
+        ['MORNING', 'Hours after sunrise, or time of day in \'Good ___ America\'', 2, 3],
+        ['COFFEE', 'Brewed pick-me-up, or Folgers product', 2, 4],
+        ['BEAN', null, 2, 5]],
+      edges: [['BARNACLE','ANCHOR','clingsto'],['ANCHOR','NEWS','reads'],['NEWS','MORNING','airedin'],['MORNING','COFFEE','callsfor'],['COFFEE','BEAN','madefrom']] }
+    ,{ words: [
+        ['CHLOROPHYLL', null, 2, 0],
+        ['ALGAE', 'Green slime on a fish tank, or simple plant-like organism', 2, 1],
+        ['POND', 'Small still-water body, or the Atlantic, in British slang (\'across the ___\')', 2, 2],
+        ['HOCKEY', 'Stanley Cup sport, or game played on ice with sticks', 2, 3],
+        ['PUCK', 'Black rubber disc, or Oberon\'s mischievous sprite', 2, 4],
+        ['FAIRY', null, 2, 5]],
+      edges: [['CHLOROPHYLL','ALGAE','foundin'],['ALGAE','POND','growsin'],['POND','HOCKEY','hosts'],['HOCKEY','PUCK','playedwith'],['PUCK','FAIRY','kindof']] }
+    ,{ words: [
+        ['NECTAR', null, 2, 0],
+        ['PEACH', 'Fuzzy-skinned stone fruit, or Georgia\'s nickname fruit', 2, 1],
+        ['PIT', 'Hard stone inside a cherry, or hole in the ground', 2, 2],
+        ['COAL', 'Black rock burned for fuel, or lump left in a naughty child\'s stocking', 2, 3],
+        ['TRAIN', 'Choo-choo on tracks, or long trailing part of a gown', 2, 4],
+        ['BRIDE', null, 2, 5]],
+      edges: [['NECTAR','PEACH','madefrom'],['PEACH','PIT','has'],['PIT','COAL','yields'],['COAL','TRAIN','fuels'],['TRAIN','BRIDE','trailsbehind']] }
+    ,{ words: [
+        ['SEXTANT', null, 2, 0],
+        ['HORIZON', 'Event ___: a black hole\'s point of no return, or where sky meets sea', 2, 1],
+        ['SUNSET', 'Boulevard in Billy Wilder\'s 1950 classic, or orange sky at dusk', 2, 2],
+        ['TOURIST', 'Guidebook-toting sightseer, or person on vacation far from home', 2, 3],
+        ['AURORA', 'Roman goddess of dawn, or a Colorado city near Denver', 2, 4],
+        ['ARCTIC', null, 2, 5]],
+      edges: [['SEXTANT','HORIZON','needs'],['HORIZON','SUNSET','seenat'],['SUNSET','TOURIST','watchedby'],['TOURIST','AURORA','seeks'],['AURORA','ARCTIC','foundin']] }
+    ,{ words: [
+        ['MUMMY', null, 2, 0],
+        ['LINEN', 'Wrinkle-prone fabric of summer suits, or sheets and tablecloths', 2, 1],
+        ['FLAX', 'Blue-flowered crop whose seeds are sold as a health food, or plant fiber spun into thread', 2, 2],
+        ['DELTA', 'Greek letter after gamma, or fan-shaped river mouth', 2, 3],
+        ['NILE', 'River that flows north to the Mediterranean, or Africa\'s longest by most counts', 2, 4],
+        ['EGYPT', null, 2, 5]],
+      edges: [['MUMMY','LINEN','wrappedin'],['LINEN','FLAX','madefrom'],['FLAX','DELTA','foundin'],['DELTA','NILE','partof'],['NILE','EGYPT','flowsthrough']] }
+    ,{ words: [
+        ['ATOM', null, 2, 0],
+        ['PROTON', 'Hydrogen nucleus, or particle found alongside neutrons', 2, 1],
+        ['POSITIVE', 'Above zero, or the \'+\' end of a battery', 2, 2],
+        ['OPTIMIST', 'Person who expects the best, or look-on-the-bright-side type', 2, 3],
+        ['GLASS', 'Drinking vessel, or what windows are made of', 2, 4],
+        ['THIRST', null, 2, 5]],
+      edges: [['ATOM','PROTON','has'],['PROTON','POSITIVE','is'],['POSITIVE','OPTIMIST','describes'],['OPTIMIST','GLASS','seesashalffull'],['GLASS','THIRST','quenches']] }
+    ,{ words: [
+        ['ACTOR', null, 2, 0],
+        ['STAGE', 'Platform for performers, or one segment of a multi-part launch vehicle', 2, 1],
+        ['ROCKET', 'Peppery green also called arugula, or Saturn V, for one', 2, 2],
+        ['SALAD', 'Bowl of mixed greens, or Caesar, for one', 2, 3],
+        ['DRESSING', 'Vinaigrette or ranch, or gauze covering', 2, 4],
+        ['WOUND', null, 2, 5]],
+      edges: [['ACTOR','STAGE','walkson'],['STAGE','ROCKET','partof'],['ROCKET','SALAD','tossedinto'],['SALAD','DRESSING','toppedwith'],['DRESSING','WOUND','covers']] }
+    ,{ words: [
+        ['ACORN', null, 2, 0],
+        ['SQUIRREL', 'Bushy-tailed backyard climber, or animal that stores food for winter', 2, 1],
+        ['PARK', 'Yellowstone or Yosemite, for one, or green space with benches', 2, 2],
+        ['GARAGE', 'Place to store a car, or space where bands first practice', 2, 3],
+        ['PUNK', 'Safety-pin-wearing rocker, or ruffian', 2, 4],
+        ['MOHAWK', null, 2, 5]],
+      edges: [['ACORN','SQUIRREL','buriedby'],['SQUIRREL','PARK','livesin'],['PARK','GARAGE','donein'],['GARAGE','PUNK','birthplaceof'],['PUNK','MOHAWK','sports']] }
+    ,{ words: [
+        ['DOT', null, 2, 0],
+        ['PERIOD', 'Full stop, or era in history', 2, 1],
+        ['SENTENCE', 'Subject-verb-object unit, or punishment handed down by a judge', 2, 2],
+        ['JAIL', 'Short-term lockup, or where you do time', 2, 3],
+        ['MONOPOLY', 'Hasbro board game, or market with one seller', 2, 4],
+        ['ANTITRUST', null, 2, 5]],
+      edges: [['DOT','PERIOD','alsocalled'],['PERIOD','SENTENCE','ends'],['SENTENCE','JAIL','servedin'],['JAIL','MONOPOLY','squarein'],['MONOPOLY','ANTITRUST','targetedby']] }
+    ,{ words: [
+        ['PENICILLIN', null, 2, 0],
+        ['MOLD', 'Fuzzy green growth on old food, or hollow form that shapes jelly', 2, 1],
+        ['SCULPTOR', 'Rodin, for one, or artist who works in three dimensions', 2, 2],
+        ['MARBLE', 'Prized stone of Carrara, or glass ball in a children\'s game', 2, 3],
+        ['COLUMN', 'Pillar holding up a portico, or recurring feature by an opinion writer', 2, 4],
+        ['NEWSPAPER', null, 2, 5]],
+      edges: [['PENICILLIN','MOLD','comesfrom'],['MOLD','SCULPTOR','usedby'],['SCULPTOR','MARBLE','carves'],['MARBLE','COLUMN','makes'],['COLUMN','NEWSPAPER','foundin']] }
+    ,{ words: [
+        ['GAVEL', null, 2, 0],
+        ['AUCTION', 'Sotheby\'s specialty, or sale where the highest bid wins', 2, 1],
+        ['PAINTING', 'Mona Lisa, for one, or framed work on a gallery wall', 2, 2],
+        ['FORGERY', 'Phony signature on a check, or counterfeit money', 2, 3],
+        ['CRIME', 'Offense punishable by law, or what detectives solve', 2, 4],
+        ['PRISON', null, 2, 5]],
+      edges: [['GAVEL','AUCTION','usedin'],['AUCTION','PAINTING','sells'],['PAINTING','FORGERY','canbea'],['FORGERY','CRIME','kindof'],['CRIME','PRISON','canleadto']] }
+    ,{ words: [
+        ['EQUATOR', null, 2, 0],
+        ['LATITUDE', 'Freedom of action, or horizontal line on a globe', 2, 1],
+        ['BOSS', 'Supervisor, or big enemy at the end of a video game stage', 2, 2],
+        ['LEVEL', 'Flat and even, or carpenter\'s tool for checking horizontal', 2, 3],
+        ['BUBBLE', 'Round film of air in a drink, or sphere that pops', 2, 4],
+        ['SOAP', null, 2, 5]],
+      edges: [['EQUATOR','LATITUDE','kindof'],['LATITUDE','BOSS','grantedby'],['BOSS','LEVEL','ends'],['LEVEL','BUBBLE','has'],['BUBBLE','SOAP','madefrom']] }
+    ,{ words: [
+        ['STRING', null, 2, 0],
+        ['PUPPET', 'Sock or marionette, or state controlled by a stronger one', 2, 1],
+        ['DICTATOR', 'Absolute ruler, or what Chaplin portrayed in 1940', 2, 2],
+        ['FILM', 'Movie, or clingy kitchen wrap', 2, 3],
+        ['PLASTIC', 'Synthetic material in toys, or credit cards, slangily', 2, 4],
+        ['BOTTLE', null, 2, 5]],
+      edges: [['STRING','PUPPET','controls'],['PUPPET','DICTATOR','controlledby'],['DICTATOR','FILM','lampoonedin'],['FILM','PLASTIC','kindof'],['PLASTIC','BOTTLE','becomes']] }
+    ,{ words: [
+        ['SYMBIOSIS', null, 2, 0],
+        ['LICHEN', 'Crusty organism that is part fungus, part alga, or pioneer species on bare surfaces', 2, 1],
+        ['ROCK', 'Granite or basalt, or genre of Led Zeppelin', 2, 2],
+        ['MUSIC', 'Art of sound, or what an orchestra plays', 2, 3],
+        ['NOTE', 'Short written reminder, or a C or an E, on a staff', 2, 4],
+        ['DOLLAR', null, 2, 5]],
+      edges: [['SYMBIOSIS','LICHEN','exemplifiedby'],['LICHEN','ROCK','growson'],['ROCK','MUSIC','kindof'],['MUSIC','NOTE','has'],['NOTE','DOLLAR','worth']] }
+  ];
+  var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  function dayName(i) { return i >= 77 ? 'Hard \u00b7 ' + (i - 76) : 'Week ' + (Math.floor(i / 7) + 1) + ' \u00b7 ' + DAYS[i % 7]; }
+  // Daily puzzle: puzzle #1 (index 0) appears on LAUNCH (a Monday), then one per day in the player's local time.
+  var LAUNCH = new Date(2026, 10, 30);
+  function todayIndex() { var n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate()), d = Math.round((t - LAUNCH) / 86400000); return Math.max(0, Math.min(d, 76)); }
+  var NODES = [], EDGES = [], byId = {};
+  var CELL = 32, GAP = 0, BW = 352, BH = 394, ROWGAP = 70, STRETCH = 0, MAXROW = 5;
+
+  var ALL, S;
+  var RULE = { name: 'Compound', note: 'A + B makes a word', verb: null };
+  var LABELS = { becomes: 'becomes', partof: 'part of', makes: 'makes', opposite: 'opposite', goeswith: 'goes with', kindof: 'kind of', causes: 'causes', foundin: 'found in', needs: 'needs', unlike: 'unlike', casts: 'casts', centerof: 'center of', clogs: 'clogs', cuts: 'cuts', dippedin: 'dipped in', displayedin: 'displayed in', displays: 'displays', favoredby: 'favored by', filedin: 'filed in', holdsup: 'holds up', issues: 'issues', ledby: 'led by', madeinto: 'made into', negotiatedby: 'negotiated by', oppositeof: 'opposite of', patrolledby: 'patrolled by', playedin: 'played in', practices: 'practices', remainsof: 'remains of', represents: 'represents', seals: 'seals', shapes: 'shapes', spunby: 'spun by', spunon: 'spun on', staffs: 'staffs', starsin: 'stars in', storesfoodin: 'stores food in', tends: 'tends', transplants: 'transplants', wadesin: 'wades in', wipedoutby: 'wiped out by', wornat: 'worn at', gnaws: 'gnaws', sportedby: 'sported by', shapedlike: 'shaped like', sentto: 'sent to', leaves: 'leaves', tops: 'tops', sharesnamewith: 'shares a name with', washesup: 'washes up', growsinto: 'grows into', fellon: 'fell on', explained: 'explained', resistedby: 'resisted by', trimmedby: 'trimmed by', wields: 'wields', checkedat: 'checked at', delays: 'delays', huntedat: 'hunted at', brings: 'brings', does: 'does', forces: 'forces', baledby: 'baled by', shoos: 'shoos', forgedinto: 'forged into', piecein: 'piece in', savedin: 'saved in', ownedby: 'owned by', playsat: 'plays at', tiedinto: 'tied into', usedon: 'used on', keptin: 'kept in', canbecome: 'can become', sippedthrough: 'sipped through', stuffs: 'stuffs', scares: 'scares', sungby: 'sung by', spreadsthrough: 'spreads through', canwin: 'can win', heldin: 'held in', writtenby: 'written by', faces: 'faces', secures: 'secures', jumpedby: 'jumped by', competesin: 'competes in', foamon: 'foam on', brewedfrom: 'brewed from', clingsto: 'clings to', reads: 'reads', airedin: 'aired in', callsfor: 'calls for', yields: 'yields', fuels: 'fuels', trailsbehind: 'trails behind', is: 'is', describes: 'describes', seesashalffull: 'sees as half full', quenches: 'quenches', walkson: 'walks on', buriedby: 'buried by', donein: 'done in', birthplaceof: 'birthplace of', sports: 'sports', ends: 'ends', squarein: 'square in', targetedby: 'targeted by', carves: 'carves', grantedby: 'granted by', controls: 'controls', controlledby: 'controlled by', lampoonedin: 'lampooned in', exemplifiedby: 'exemplified by', worth: 'worth', playedwith: 'played with', induces: 'induces', walkedby: 'walked by', givenby: 'given by', seenas: 'seen as', wornon: 'worn on', wonby: 'won by', trademarkof: 'trademark of', repelledby: 'repelled by', soothes: 'soothes', foundon: 'found on', troubles: 'troubles', wovenfrom: 'woven from', proneto: 'prone to', employs: 'employs', dugby: 'dug by', comesin: 'comes in', thrownfor: 'thrown for', celebrates: 'celebrates', dispelledby: 'dispelled by', builton: 'built on', supplies: 'supplies', heldby: 'held by', issuedby: 'issued by', owns: 'owns', marks: 'marks', herdedby: 'herded by', fires: 'fires', servedin: 'served in', growson: 'grows on', readby: 'read by', measuresspeedof: 'measures speed of', measures: 'measures', measuredin: 'measured in', currencyof: 'currency of', ruledby: 'ruled by', flavoredwith: 'flavored with', tossedinto: 'tossed into', doneby: 'done by', spews: 'spews', grants: 'grants', madeon: 'made on', protects: 'protects', resembles: 'resembles', stores: 'stores', transmutes: 'transmutes', comesthrough: 'comes through', installs: 'installs', screwsinto: 'screws into', symbolof: 'symbol of', secretedby: 'secreted by', checks: 'checks', comesfrom: 'comes from', printedon: 'printed on', accompaniedby: 'accompanied by', foldedinto: 'folded into', lines: 'lines', holds: 'holds', growsin: 'grows in', wears: 'wears', earnedby: 'earned by', storedby: 'stored by', keeps: 'keeps', writes: 'writes', calledby: 'called by', blows: 'blows', heardfrom: 'heard from', wrappedin: 'wrapped in', madefrom: 'made from', flowsthrough: 'flows through', usedin: 'used in', sells: 'sells', canbea: 'can be a', canleadto: 'can lead to', watchedby: 'watched by', met: 'met', seenat: 'seen at', mayhave: 'may have', glowsat: 'glows at', can: 'can', followedby: 'followed by', mayneed: 'may need', uses: 'uses', gives: 'gives', leadsto: 'leads to', signedby: 'signed by', playedby: 'played by', headlines: 'headlines', drives: 'drives', wornby: 'worn by', slangfor: 'slang for', tiedwith: 'tied with', wornin: 'worn in', styledwith: 'styled with', covers: 'covers', goes: 'goes', goesin: 'goes in', usedto: 'used to', cleans: 'cleans', visitedby: 'visited by', dugupby: 'dug up by', includes: 'includes', serves: 'serves', blendedinto: 'blended into', opens: 'opens', carries: 'carries', sailedby: 'sailed by', cappedby: 'capped by', livesin: 'lives in', paves: 'paves', neededfor: 'needed for', has: 'has', sharesname: 'shares name with', usedby: 'used by', houses: 'houses', eatenby: 'eaten by', usedin: 'used in', crowns: 'crowns', hunts: 'hunts', catches: 'catches', seeks: 'seeks', pulls: 'pulls', pairswith: 'pairs with', pouredfrom: 'poured from', madein: 'made in', usedfor: 'used for', requires: 'requires', madeof: 'made of', alsocalled: 'also called', joins: 'joins', jumpedover: 'jumped over', toppedwith: 'topped with', goeson: 'goes on', servedwith: 'served with', spins: 'spins', buries: 'buries', decorates: 'decorates', features: 'features', separatesinto: 'separates into', churnedinto: 'churned into', spreadon: 'spread on', spots: 'spots', guardedby: 'guarded by', contains: 'contains', frames: 'frames', borders: 'borders', sentby: 'sent by', sitson: 'sits on', hosts: 'hosts', earns: 'earns', sinks: 'sinks', inspired: 'inspired' };
+  var PLAIN = { opposite: 1, unlike: 1 };
+  function pillText(a, b, t) { if (t && t !== 'compound' && LABELS[t]) return LABELS[t]; return pillText0(a, b, t); }
+  function pillText0(a, b, t) { return t === 'compound' && RULE.labels ? 'plus' : ((t && t !== 'compound') ? t : (a.ans + b.ans).toLowerCase()); }
+  function chipText(a, b, t) { return a.ans.toLowerCase() + ' ' + LABELS[t] + ' ' + b.ans.toLowerCase(); }
+  function loadPuzzle(i) {
+    var P = PUZZLES[i]; NODES = []; byId = {};
+    RULE = P.rule || { name: 'Chain', note: '', labels: true, labelMode: 'start' };
+    RULE.labelMode = RULE.labelMode || (RULE.showLabels ? 'start' : 'solved');
+    document.getElementById('rulechip').innerHTML = '<b></b><span></span>'; var rc = document.getElementById('rulechip'); rc.firstChild.textContent = 'Rule: ' + RULE.name; rc.lastChild.textContent = RULE.note;  var byAns = {};
+    var maxR = 0; P.words.forEach(function (w) { if (w[3] > maxR) maxR = w[3]; });
+    P.words.forEach(function (w, k) { var n = { id: k + 1, ans: w[0], clue: w[1], col: P.flipX ? 1 - w[2] : w[2], row: maxR - w[3] }; NODES.push(n); byId[n.id] = n; byAns[n.ans] = n.id; });
+    NODES.sort(function (a, b) { return b.row - a.row || a.col - b.col; });
+    EDGES = P.edges.map(function (e) { return [byAns[e[0]], byAns[e[1]], e[2] || 'compound']; });
+    ALL.p = i; S = ALL.s[i] || (ALL.s[i] = fresh()); HIST = [];
+    if (!NODES.every(function (n) { return S.letters[n.id] && S.letters[n.id].length === n.ans.length; })) S = ALL.s[i] = fresh();
+    markMenu();
+    buildBoard(); render(); fit();
+  }
+  function fresh() {
+    var s = { letters: {}, hinted: {}, solved: {}, hints: 0, ms: 0, won: false, sel: (NODES.filter(function (n) { return n.clue; })[0] || NODES[0]).id, cur: 0 };
+    NODES.forEach(function (n) { s.letters[n.id] = n.ans.split('').map(function (c) { return n.clue ? '' : c; }); s.hinted[n.id] = n.ans.split('').map(function () { return false; }); if (!n.clue) s.solved[n.id] = true; });
+    return s;
+  }
+  function markMenu() {
+    document.querySelectorAll('.menu .pz').forEach(function (b) {
+      var j = +b.getAttribute('data-pz');
+      b.classList.toggle('on', j === ALL.p);
+      b.classList.toggle('done', !!(ALL.s[j] && ALL.s[j].won));
+    });
+    document.getElementById('results').hidden = !S.won;
+  }
+  function fmt(ms) { var t = Math.round(ms / 1000), m = Math.floor(t / 60), r = t % 60; return m + ':' + (r < 10 ? '0' : '') + r; }
+  var resEl = document.getElementById('res'), toastEl = document.getElementById('toast'), toastT;
+  function toast(msg, ms) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove('show'); }, ms || 1800); }
+  function reduced() { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
+  function verdict() { return S.hints === 0 ? 'Spotless.' : S.hints <= 2 ? 'Nicely linked.' : 'Chain complete.'; }
+  function confetti() {
+    var box = document.createElement('div'); box.className = 'confetti'; var cols = ['#121212', '#a7d8ff', '#ffda00', '#121212', '#ffda00'];
+    for (var i = 0; i < 46; i++) {
+      var p = document.createElement('i'), sz = 6 + Math.random() * 6;
+      p.style.left = (Math.random() * 100) + '%'; p.style.width = sz + 'px'; p.style.height = (Math.random() < .5 ? sz : sz * 2) + 'px';
+      p.style.background = cols[i % cols.length]; p.style.animationDuration = (1.6 + Math.random() * 1.4) + 's'; p.style.animationDelay = (Math.random() * 0.5) + 's';
+      p.style.setProperty('--dx', ((Math.random() - .5) * 120) + 'px'); p.style.setProperty('--rot', ((Math.random() - .5) * 900) + 'deg');
+      box.appendChild(p);
+    }
+    document.body.appendChild(box); setTimeout(function () { box.remove(); }, 3600);
+  }
+  var soundOn = true, actx = null;
+  try { soundOn = localStorage.getItem('kobble-sound') !== 'off'; } catch (e) {}
+  function ctx() { try { if (!actx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); } if (actx && actx.state === 'suspended') actx.resume(); } catch (e) {} return actx; }
+  ['pointerdown', 'keydown'].forEach(function (t) { document.addEventListener(t, function (ev) { if (ev.isTrusted) ctx(); }, { passive: true }); });
+  function chime() {
+    if (!soundOn) return; var c = ctx(); if (!c || c.state !== 'running') return;
+    var t0 = c.currentTime + 0.03;
+    function tone(freq, t, dur, type, vol, slideTo) {
+      var o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur * 0.8);
+      o.connect(g); g.connect(c.destination);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.start(t); o.stop(t + dur + 0.03);
+    }
+    // 1. a bouncy run up the scale, one note per word as the board hops
+    var scale = [587.33, 659.25, 783.99, 880, 987.77, 1174.66, 1318.5, 1567.98], n = NODES.length;
+    for (var i = 0; i < n; i++) tone(scale[i % scale.length], t0 + i * 0.07, 0.22, 'triangle', 0.13);
+    // 2. a bloop for each link label as it pops
+    for (var k = 0; k < EDGES.length; k++) tone(520 + (k % 3) * 90, t0 + 0.2 + k * 0.09, 0.12, 'sine', 0.07, 220);
+    // 3. a bright major chord with a little lift, as the toast lands
+    var tc = t0 + 0.95;
+    [523.25, 659.25, 783.99, 1046.5].forEach(function (f, j) { tone(f, tc + j * 0.03, 1.2, 'triangle', 0.1); });
+    tone(1567.98, tc + 0.12, 0.9, 'sine', 0.06);
+    // 4. confetti sparkles
+    for (var m = 0; m < 9; m++) tone(2200 + Math.random() * 1800, tc + 0.15 + m * 0.11 + Math.random() * 0.05, 0.07, 'square', 0.025);
+  }
+  function setSoundLabel() { document.getElementById('snd').textContent = 'Sound: ' + (soundOn ? 'on' : 'off'); }
+  document.getElementById('snd').addEventListener('click', function (ev) { ev.stopPropagation(); soundOn = !soundOn; try { localStorage.setItem('kobble-sound', soundOn ? 'on' : 'off'); } catch (e) {} setSoundLabel(); if (soundOn) { ctx(); chime(); } });
+  setSoundLabel();
+  function celebrate() {
+    markMenu();
+    if (reduced()) { chime(); showResults(); return; }
+    NODES.forEach(function (n, k) { cellEls[n.id].forEach(function (c, i) { c.style.setProperty('--d', (k * 70 + i * 45) + 'ms'); }); });
+    pillEls.forEach(function (p, k) { p.pill.style.setProperty('--d', (k * 90 + 200) + 'ms'); });
+    boardEl.classList.add('celebrate');
+    toast(verdict().replace('.', ''), 1700);
+    confetti(); chime();
+    var mine = ALL.p;
+    setTimeout(function () { boardEl.classList.remove('celebrate'); }, 2600);
+    setTimeout(function () { if (ALL.p === mine && S.won) showResults(); }, 1900);
+  }
+  function gridText() {
+    var rows = {}; NODES.forEach(function (n) { (rows[n.row] = rows[n.row] || []).push(n); });
+    return Object.keys(rows).sort().map(function (r) {
+      return rows[r].sort(function (a, b) { return a.col - b.col; }).map(function (n) { return n.ans.split('').map(function (c, i) { return !n.clue ? '\uD83D\uDFE6' : S.hinted[n.id][i] ? '\u2B1C' : '\u2B1B'; }).join(''); }).join('  ');
+    }).join('\n');
+  }
+  function showResults() {
+    document.getElementById('reskick').textContent = dayName(ALL.p);
+    document.getElementById('restitle').textContent = verdict();
+    var st = document.getElementById('resstats'); st.innerHTML = '';
+    [[fmt(S.ms), 'Time'], [String(S.hints), S.hints === 1 ? 'Hint' : 'Hints'], [String(EDGES.length), 'Links']].forEach(function (x) { var d = document.createElement('div'); d.className = 'stat'; d.innerHTML = '<b></b><span></span>'; d.firstChild.textContent = x[0]; d.lastChild.textContent = x[1]; st.appendChild(d); });
+    var ch = document.getElementById('reschips'); ch.innerHTML = '';
+    EDGES.forEach(function (e) { var p = document.createElement('span'); p.className = 'expill'; p.textContent = chipText(byId[e[0]], byId[e[1]], e[2]); ch.appendChild(p); });
+    var g = document.getElementById('resgrid'); g.innerHTML = '';
+    var rows = {}; NODES.forEach(function (n) { (rows[n.row] = rows[n.row] || []).push(n); });
+    Object.keys(rows).sort().forEach(function (r) {
+      var row = document.createElement('div'); row.className = 'minirow';
+      rows[r].sort(function (a, b) { return a.col - b.col; }).forEach(function (n) { var w = document.createElement('div'); w.className = 'miniw'; n.ans.split('').forEach(function (c, i) { var q = document.createElement('i'); if (S.hinted[n.id][i]) q.className = 'h'; w.appendChild(q); }); row.appendChild(w); });
+      g.appendChild(row);
+    });
+    var nxt = nextPuzzle(), nb = document.getElementById('resnext'); nb.textContent = nxt < 0 ? 'Done' : dayName(nxt) + ' \u2192';
+    resEl.hidden = false; nb.focus();
+  }
+  function nextPuzzle() { for (var k = 1; k < PUZZLES.length; k++) { var j = (ALL.p + k) % PUZZLES.length; if (!(ALL.s[j] && ALL.s[j].won)) return j; } return -1; }
+  function hideResults() { resEl.hidden = true; }
+  document.getElementById('resclose').addEventListener('click', hideResults);
+  resEl.addEventListener('click', function (ev) { if (ev.target === resEl) hideResults(); });
+  document.getElementById('resnext').addEventListener('click', function () { var j = nextPuzzle(); hideResults(); if (j >= 0) loadPuzzle(j); });
+  document.getElementById('resshare').addEventListener('click', function () {
+    var txt = 'Mount Mirvu \u00B7 ' + dayName(ALL.p) + '\n' + fmt(S.ms) + ' \u00B7 ' + (S.hints ? S.hints + (S.hints === 1 ? ' hint' : ' hints') : 'no hints') + '\n' + gridText();
+    function done(ok) { toast(ok ? 'Copied to clipboard' : 'Could not copy', 1500); }
+    try { navigator.clipboard.writeText(txt).then(function () { done(true); }, function () { done(fallbackCopy(txt)); }); } catch (e) { done(fallbackCopy(txt)); }
+  });
+  function fallbackCopy(t) { try { var ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); var ok = document.execCommand('copy'); ta.remove(); return ok; } catch (e) { return false; } }
+  document.getElementById('results').addEventListener('click', function () { setMenu(false); showResults(); });
+  setInterval(function () { if (S && !S.won && document.visibilityState === 'visible') S.ms = (S.ms || 0) + 1000; }, 1000);
+
+  function valid(d) { return d && d.letters && d.solved && d.hinted; }
+
+  var boardEl = document.getElementById('board');
+  var cellEls = {}, nodeEls = {}, pillEls = [];
+
+  function cssNum(name, fallback) {
+    var v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+    return isNaN(v) ? fallback : v;
+  }
+
+  function calcBW() { return Math.max(300, Math.min(396, document.documentElement.clientWidth - 24)); }
+  function buildBoard() {
+    BW = calcBW(); boardEl.style.width = BW + 'px';
+    boardEl.innerHTML = ''; cellEls = {}; nodeEls = {}; pillEls = [];
+    CELL = cssNum('--cell', 30); GAP = cssNum('--gap', 3);
+    var mr = 0; NODES.forEach(function (n) { if (n.row > mr) mr = n.row; }); ROWGAP = mr >= 7 ? 60 : mr === 6 ? 66 : 72; MAXROW = Math.max(1, mr); if (STRETCH > ROWGAP) ROWGAP = STRETCH; var swayK = 1;
+    var maxRowZ = 0; NODES.forEach(function (n) { if (n.row > maxRowZ) maxRowZ = n.row; });
+    NODES.forEach(function (n) { n.w = n.ans.length * CELL + (n.ans.length - 1) * GAP; n.x = n.col === 2 ? Math.round((BW - n.w) / 2) : (n.col === 0 ? 1 : BW - 1 - n.w); n.y = 26 + ROWGAP * n.row; var off = Math.min(Math.round(BW * 0.2 * swayK), Math.max(0, Math.round((BW - n.w) / 2) - 2)); n.x = Math.round((BW - n.w) / 2) + ((maxRowZ - n.row) % 2 === 0 ? -off : off); });
+    var maxRow = 0; NODES.forEach(function (n) { if (n.row > maxRow) maxRow = n.row; });
+    BH = 26 + ROWGAP * maxRow + CELL + 14; boardEl.style.height = BH + 'px';
+    var svgNS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', BW); svg.setAttribute('height', BH);
+    svg.innerHTML = '<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 z" class="arrow"/></marker>' +
+      '<marker id="ahf" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 z" class="arrow full"/></marker></defs>';
+    boardEl.appendChild(svg);
+    EDGES.forEach(function (e) {
+      var a = byId[e[0]], b = byId[e[1]], x1, y1, x2, y2;
+      var up = a.y > b.y, lo = up ? a : b, hi = up ? b : a, sw = ((maxRowZ - lo.row) % 2 === 0) ? 1 : -1;
+      var lx = Math.max(a.w, b.w) < 200 ? 0.5 : 0.5; x1 = a.x + a.w * (up ? (sw > 0 ? 0.65 : 0.35) : (sw > 0 ? 0.35 : 0.65)); x2 = b.x + b.w * (up ? (sw > 0 ? 0.35 : 0.65) : (sw > 0 ? 0.65 : 0.35));
+      if (a.y < b.y) { y1 = a.y + CELL + 3; y2 = b.y - 5; } else { y1 = a.y - 3; y2 = b.y + CELL + 5; }
+      var dir = y2 < y1 ? -1 : 1, ya = y1 + 3 * dir, yb = y2 - 13 * dir, my = (ya + yb) / 2;
+      var line = document.createElementNS(svgNS, 'path');
+      line.setAttribute('d', 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + ya + ' C' + x1 + ',' + my + ' ' + x2 + ',' + my + ' ' + x2 + ',' + yb + ' L' + x2 + ',' + y2);
+      line.setAttribute('class', 'edge-line'); line.setAttribute('marker-end', PLAIN[e[2]] ? '' : 'url(#ah)');
+      svg.appendChild(line);
+      var pill = document.createElement('div');
+      pill.className = 'pill'; pill.style.left = ((x1 + x2) / 2) + 'px'; var gapMid = (hi.y + CELL + lo.y) / 2; pill.style.top = gapMid + 'px'; pill.dataset.cy = gapMid; pill.dataset.h = a.y === b.y ? '1' : '';
+      boardEl.appendChild(pill);
+      pillEls.push({ e: e, line: line, pill: pill });
+    });
+    NODES.forEach(function (n) {
+      var el = document.createElement('div');
+      el.className = 'node'; if (!n.clue && n.row === 0) { var fl = document.createElement('div'); fl.className = 'flag'; fl.innerHTML = '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 21V2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 3h13l-4 4.5L18 12H5z" fill="currentColor"/></svg>'; el.appendChild(fl); } el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; el.style.width = n.w + 'px';
+      if (!n.clue && n.row !== 0) { var bs = document.createElement('div'); bs.className = 'base'; el.appendChild(bs); }
+      var cells = document.createElement('div'); cells.className = 'cells';
+      cellEls[n.id] = [];
+      for (var i = 0; i < n.ans.length; i++) {
+        (function (i) {
+          var c = document.createElement('div'); c.className = 'cell';
+          c.addEventListener('click', function (ev) { ev.stopPropagation(); if (!n.clue) return; S.sel = n.id; S.cur = i; render(); });
+          cells.appendChild(c); cellEls[n.id].push(c);
+        })(i);
+      }
+      el.appendChild(cells);
+      el.addEventListener('click', function () { if (!n.clue) return; S.sel = n.id; var l = S.letters[n.id]; var k = l.indexOf(''); S.cur = k < 0 ? 0 : k; render(); });
+      boardEl.appendChild(el); nodeEls[n.id] = el;
+    });
+  }
+
+  function buildKeys() {
+    var rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'], kb = document.getElementById('keys');
+    kb.appendChild(document.querySelector('.cluebar'));
+    rows.forEach(function (r, ri) {
+      var row = document.createElement('div'); row.className = 'row';
+      r.split('').forEach(function (ch) { row.appendChild(key(ch, ch)); });
+      if (ri === 2) { var bs = key('⌫', 'BACK'); bs.classList.add('wide'); row.appendChild(bs); }
+      kb.appendChild(row);
+    });
+    function key(label, k) {
+      var b = document.createElement('button'); b.className = 'key'; b.type = 'button'; if (k === 'BACK') b.innerHTML = '<svg width="30" height="22" viewBox="0 0 34 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2h19a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H11L2 12z"/><path d="M16 8l8 8M24 8l-8 8"/></svg>'; else b.textContent = label; b.setAttribute('aria-label', k === 'BACK' ? 'Backspace' : label);
+      b.addEventListener('click', function () { if (k === 'PREV') stepClue(-1); else if (k === 'NEXT') stepClue(1); else press(k); }); return b;
+    }
+  }
+
+  function fit() {
+    var w = Math.min(1, (document.documentElement.clientWidth - 24) / BW), wrap = document.getElementById('wrap');
+    var keysH = document.getElementById('keys').offsetHeight, availH = window.innerHeight - wrap.offsetTop - keysH - 28;
+    if (availH > 0) {
+      var base = MAXROW >= 7 ? 60 : MAXROW === 6 ? 66 : 72, want = (availH / w - 26 - CELL - 14) / MAXROW, tgt = want > base ? Math.min(190, Math.floor(want)) : 0;
+      if (Math.abs(tgt - STRETCH) > 1) { STRETCH = tgt; buildBoard(); render(); }
+      w = Math.min(w, Math.max(0.45, availH / BH));
+    }
+    boardEl.style.transform = 'scale(' + w + ')';
+    wrap.style.width = (BW * w) + 'px'; wrap.style.height = (BH * w) + 'px';
+  }
+
+  function press(k) {
+    var n = byId[S.sel]; if (!n || S.solved[n.id]) return;
+    clearWrong();
+    var L = S.letters[n.id];
+    if (k === 'BACK') {
+      if (L[S.cur] === '' && S.cur > 0) S.cur--;
+      if (!S.hinted[n.id][S.cur]) L[S.cur] = '';
+      else if (S.cur > 0) S.cur--;
+    } else {
+      if (S.hinted[n.id][S.cur]) { var nx = nextOpen(n, S.cur); if (nx < 0) { render(); return; } S.cur = nx; }
+      L[S.cur] = k;
+      var nx2 = nextOpen(n, S.cur); if (nx2 >= 0) S.cur = nx2;
+      checkNode(n);
+    }
+    render();
+  }
+  function nextOpen(n, from) { for (var i = from + 1; i < n.ans.length; i++) if (!S.hinted[n.id][i]) return i; return -1; }
+  function clearWrong() { Object.keys(cellEls).forEach(function (id) { cellEls[id].forEach(function (c) { c.classList.remove('wrong'); c.classList.remove('shake'); }); }); }
+
+  function checkNode(n) {
+    var L = S.letters[n.id];
+    if (L.indexOf('') >= 0) return;
+    if (L.join('') === n.ans) {
+      S.solved[n.id] = true;
+      var left = NODES.some(function (c) { return !S.solved[c.id]; });
+      if (left) gotoNode(successor(n), true);
+    } else if (wrongShake) {
+      cellEls[n.id].forEach(function (c) { c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); });
+    }
+  }
+
+  function hint() {
+    var n = byId[S.sel]; if (!n || S.solved[n.id]) return;
+    var L = S.letters[n.id], H = S.hinted[n.id], idx = -1;
+    if (!H[S.cur] && L[S.cur] !== n.ans[S.cur]) idx = S.cur;
+    else for (var i = 0; i < n.ans.length; i++) if (!H[i] && L[i] !== n.ans[i]) { idx = i; break; }
+    if (idx < 0) return;
+    clearWrong(); L[idx] = n.ans[idx]; H[idx] = true; S.hints++;
+    var nx = nextOpen(n, idx); S.cur = nx >= 0 ? nx : idx;
+    checkNode(n); render();
+  }
+
+  var lastSel = null;
+  function ensureVisible() {
+    var el = nodeEls[S.sel]; if (!el) return;
+    var r = el.getBoundingClientRect(), top = 8, bot = document.getElementById('keys').getBoundingClientRect().top - 8;
+    if (r.top < top) window.scrollBy(0, r.top - top); else if (r.bottom > bot) window.scrollBy(0, r.bottom - bot);
+  }
+  function render() {
+    var solvedCount = 0;
+    NODES.forEach(function (n) {
+      var el = nodeEls[n.id], isSel = S.sel === n.id, done = !!S.solved[n.id];
+      if (done) solvedCount++;
+      el.classList.toggle('sel', isSel); el.classList.toggle('solved', done);
+      cellEls[n.id].forEach(function (c, i) {
+        c.textContent = S.letters[n.id][i];
+        c.classList.toggle('cur', isSel && i === S.cur && !done);
+        c.classList.toggle('hint', !!S.hinted[n.id][i]);
+      });
+    });
+    var anyFull = false;
+    pillEls.forEach(function (p) {
+      var a = byId[p.e[0]], b = byId[p.e[1]], full = S.solved[a.id] && S.solved[b.id];
+      var showLbl = full || RULE.labelMode === 'start' || (RULE.labelMode === 'one' && (S.solved[a.id] || S.solved[b.id]));
+      p.pill.textContent = showLbl ? pillText(a, b, p.e[2]) : '';
+      p.pill.classList.toggle('ghost', showLbl && !full);
+      if (full) anyFull = true;
+      p.line.setAttribute('class', 'edge-line' + (full ? ' full' : ''));
+      p.line.setAttribute('marker-end', PLAIN[p.e[2]] ? '' : (full ? 'url(#ahf)' : 'url(#ah)'));
+    });
+    document.getElementById('rulechip').style.visibility = (RULE.hidden && !anyFull) ? 'hidden' : 'visible';
+    var n = byId[S.sel], clue = document.getElementById('clue');
+    if (S.sel !== lastSel) { lastSel = S.sel; ensureVisible(); }
+    clue.innerHTML = '<span></span>';
+    Array.prototype.slice.call(document.querySelectorAll('#cluebtns .morebtn')).forEach(function (x) { if (x.id !== 'revealbtn') x.remove(); });
+    var parts = (n.clue || '').split(', or '), late = true;
+    var hideSecond = late && parts.length === 2 && !(S.more && S.more[n.id]) && !S.solved[n.id];
+    clue.querySelector('span').textContent = !n.clue ? 'No clue. Work it out from its links.' : hideSecond ? parts[0] : n.clue;
+    clue.querySelector('span').style.opacity = n.clue ? '' : '0.6';
+    requestAnimationFrame(fit);
+    if (hideSecond) {
+      var mb = document.createElement('button'); mb.className = 'morebtn'; mb.textContent = 'Second clue';
+      mb.addEventListener('click', function (ev) { ev.stopPropagation(); S.more = S.more || {}; S.more[n.id] = true; S.hints++; render(); });
+      document.getElementById('cluebtns').insertBefore(mb, document.getElementById('revealbtn'));
+    }
+    if (RULE.evolving) { var ts = []; EDGES.forEach(function (e) { if ((e[0] === n.id || e[1] === n.id) && ts.indexOf(e[2]) < 0) ts.push(e[2]); }); var rc2 = document.getElementById('rulechip'); rc2.firstChild.textContent = 'Links here: '; rc2.lastChild.textContent = ts.join(' \u00B7 '); }
+    if (solvedCount === NODES.length && !S.won) { S.won = true; celebrate(); }
+  }
+
+  var HIST = [];
+  var wrongShake = true;
+  function readIdx(n) { return NODES.indexOf(n); }
+  function successor(n) {
+    var i, c, blankAt = null;
+    for (i = 1; i <= NODES.length; i++) { c = NODES[(readIdx(n) + i) % NODES.length]; if (S.solved[c.id]) continue; if (c.clue) return c; if (!blankAt) blankAt = c; }
+    return blankAt || NODES[(readIdx(n) + 1) % NODES.length];
+  }
+  function gotoNode(n, push) { if (push && n.id !== S.sel) HIST.push(S.sel); S.sel = n.id; var k = S.letters[n.id].indexOf(''); S.cur = k < 0 ? 0 : k; }
+  function stepClue(d) { var i = readIdx(byId[S.sel]), n, k = 0; do { i = (i + d + NODES.length) % NODES.length; n = NODES[i]; k++; } while (!n.clue && k <= NODES.length); gotoNode(n, false); render(); }
+
+  document.addEventListener('keydown', function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === 'Escape') { setMenu(false); hideResults(); if (!helpEl.hidden) setHelp(false); return; }
+    if (!helpEl.hidden || !resEl.hidden) return;
+    if (/^[a-zA-Z]$/.test(k)) { press(k.toUpperCase()); ev.preventDefault(); }
+    else if (k === 'Backspace') { press('BACK'); ev.preventDefault(); }
+    else if (k === 'ArrowLeft') { if (S.cur > 0) { S.cur--; render(); } ev.preventDefault(); }
+    else if (k === 'ArrowRight') { if (S.cur < byId[S.sel].ans.length - 1) { S.cur++; render(); } ev.preventDefault(); }
+    else if (k === 'ArrowUp') { stepClue(1); ev.preventDefault(); }
+    else if (k === 'ArrowDown') { stepClue(-1); ev.preventDefault(); }
+  });
+  var menuBtn = document.getElementById('menubtn'), menuEl = document.getElementById('menu');
+  function setMenu(open) { menuEl.hidden = !open; menuBtn.setAttribute('aria-expanded', String(open)); }
+  var helpEl = document.getElementById('help'), helpBtn = document.getElementById('helpbtn');
+  function setHelp(open) { helpEl.hidden = !open; if (open) document.getElementById('helpclose').focus(); else helpBtn.focus(); }
+  helpBtn.addEventListener('click', function (ev) { ev.stopPropagation(); setMenu(false); setHelp(true); });
+  document.getElementById('helpclose').addEventListener('click', function () { setHelp(false); });
+  document.getElementById('helpx').addEventListener('click', function () { setHelp(false); });
+  helpEl.addEventListener('click', function (ev) { if (ev.target === helpEl) setHelp(false); });
+  menuBtn.addEventListener('click', function (ev) { ev.stopPropagation(); setMenu(menuEl.hidden); });
+  document.addEventListener('click', function () { setMenu(false); });
+    document.getElementById('reset').addEventListener('click', function () { setMenu(false); S = ALL.s[ALL.p] = fresh(); render(); });
+  (function () { var box = document.getElementById('pzlist'); PUZZLES.forEach(function (P, i) { var b = document.createElement('button'); b.setAttribute('role', 'menuitem'); b.className = 'pz'; b.setAttribute('data-pz', i); b.textContent = dayName(i) + (i === todayIndex() ? ' \u00b7 Today' : ''); b.addEventListener('click', function () { setMenu(false); loadPuzzle(i); }); box.appendChild(b); }); })();
+  window.addEventListener('resize', function () { if (calcBW() !== BW) { buildBoard(); render(); } fit(); });
+  window.addEventListener('load', fit);
+
+  function start(data) {
+    ALL = (data && data.s && typeof data.p === 'number' && PUZZLES[data.p] && Array.isArray(data.s)) ? data : { p: 0, s: [] };
+    for (var k = 0; k < ALL.s.length; k++) if (ALL.s[k] && !valid(ALL.s[k])) ALL.s[k] = null;
+    buildKeys();
+    document.getElementById('revealbtn').addEventListener('click', hint);
+    ALL.p = todayIndex(); loadPuzzle(ALL.p);
+    try { if (!localStorage.getItem('linkwork-seen-help')) { localStorage.setItem('linkwork-seen-help', '1'); setHelp(true); } } catch (e) { setHelp(true); }
+    try { if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(function () { return ALL; }); } catch (e) {}
+  }
+  if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start);
+  else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
+})();
+</script>
+</body>
+</html>
