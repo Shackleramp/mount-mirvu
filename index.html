@@ -48,7 +48,8 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
 .boardwrap { margin: 0 auto; position: relative; }
 .board { position: relative; height: 394px; transform-origin: top left; }
 .base { position: absolute; left: 0; right: 0; top: 35px; height: 4px; border-radius: 2px; background: var(--cur-line, #2b6cb0); }
-.flag { position: absolute; left: 50%; top: -24px; margin-left: -5px; color: var(--cur-line, #2b6cb0); line-height: 0; }
+.board.won .flag { color: #F4A300; }
+.flag { transition: color .4s; position: absolute; left: 50%; top: -24px; margin-left: -5px; color: var(--cur-line, #2b6cb0); line-height: 0; }
 .node[data-tag]::before { content: attr(data-tag); position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); font: 700 10px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .board svg { position: absolute; inset: 0; pointer-events: none; }
 .edge-line { stroke: var(--edge); stroke-width: 1.5; stroke-dasharray: 4 4; fill: none; }
@@ -1267,6 +1268,7 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
     }
     if (RULE.evolving) { var ts = []; EDGES.forEach(function (e) { if ((e[0] === n.id || e[1] === n.id) && ts.indexOf(e[2]) < 0) ts.push(e[2]); }); var rc2 = document.getElementById('rulechip'); rc2.firstChild.textContent = 'Links here: '; rc2.lastChild.textContent = ts.join(' \u00B7 '); }
     if (solvedCount === NODES.length && !S.won) { S.won = true; celebrate(); }
+    boardEl.classList.toggle('won', !!S.won);
   }
 
   var HIST = [];
