@@ -48,8 +48,10 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
 .boardwrap { margin: 0 auto; position: relative; }
 .board { position: relative; height: 394px; transform-origin: top left; }
 .base { position: absolute; left: 0; right: 0; top: 35px; height: 4px; border-radius: 2px; background: var(--cur-line, #2b6cb0); }
+.flag svg { transform: scale(.58); transform-origin: 23% 100%; transition: transform .7s cubic-bezier(.34,1.56,.64,1); }
 .board.won .flag { color: #F4A300; }
-.flag { transition: color .4s; position: absolute; left: 50%; top: -36px; margin-left: -8px; color: var(--cur-line, #2b6cb0); line-height: 0; }
+.board.won .flag svg { transform: scale(1); }
+.flag { transition: color .4s; position: absolute; left: 50%; top: -40px; margin-left: -9px; color: var(--cur-line, #2b6cb0); line-height: 0; }
 .node[data-tag]::before { content: attr(data-tag); position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); font: 700 10px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .board svg { position: absolute; inset: 0; pointer-events: none; }
 .edge-line { stroke: var(--edge); stroke-width: 1.5; stroke-dasharray: 4 4; fill: none; }
@@ -1137,7 +1139,7 @@ h1 { font-family: var(--display); font-weight: var(--title-weight); font-size: v
     });
     NODES.forEach(function (n) {
       var el = document.createElement('div');
-      el.className = 'node'; if (!n.clue && n.row === 0) { var fl = document.createElement('div'); fl.className = 'flag'; fl.innerHTML = '<svg width="34" height="34" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 21V2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 3h13l-4 4.5L18 12H5z" fill="currentColor"/></svg>'; el.appendChild(fl); } el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; el.style.width = n.w + 'px';
+      el.className = 'node'; if (!n.clue && n.row === 0) { var fl = document.createElement('div'); fl.className = 'flag'; fl.innerHTML = '<svg width="38" height="38" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 21V2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 3h13l-4 4.5L18 12H5z" fill="currentColor"/></svg>'; el.appendChild(fl); } el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; el.style.width = n.w + 'px';
       if (!n.clue && n.row !== 0) { var bs = document.createElement('div'); bs.className = 'base'; el.appendChild(bs); }
       var cells = document.createElement('div'); cells.className = 'cells';
       cellEls[n.id] = [];
